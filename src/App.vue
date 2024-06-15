@@ -3,6 +3,9 @@ import { computed, ref, onMounted } from 'vue'
 import axios from 'axios'
 import JobList from './components/JobList.vue'
 import FilterList from './components/FilterList.vue'
+import Spinner from './components/Spinner.vue'
+
+const isLoading = ref(false)
 
 const jobList = ref<any[]>([])
 const validList = computed<any[]>(
@@ -22,6 +25,8 @@ const filters = computed<Map<string, boolean>>(() => {
 })
 
 async function fetchData() {
+  isLoading.value = true
+
   const spreadsheetId = '1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ'
   const apiKey = 'AIzaSyAe3TLRIX9Yvz7bYXuz2_hyIQpoO1lrR08'
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1?key=${apiKey}`
@@ -31,6 +36,8 @@ async function fetchData() {
     return response.data.values
   } catch (error) {
     console.error(error)
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -63,8 +70,9 @@ onMounted(async () => {
         <FilterList :filters="filters" />
       </header>
 
-      <main class="w-full">
-        <JobList :jobs="validList" />
+      <main class="w-full flex min-h-[80vh] items-center">
+        <Spinner v-if="isLoading" class="mx-auto self-center" />
+        <JobList v-else :jobs="validList" />
       </main>
     </section>
   </div>
