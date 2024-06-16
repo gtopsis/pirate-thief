@@ -28,8 +28,8 @@ const filters = computed<Map<string, boolean>>(() => {
 async function fetchData() {
   isLoading.value = true
 
-  const spreadsheetId = '1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ'
-  const apiKey = 'AIzaSyAe3TLRIX9Yvz7bYXuz2_hyIQpoO1lrR08'
+  const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID
+  const apiKey = import.meta.env.VITE_GOOGLE_SPREADSHEET_API_KEY
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1?key=${apiKey}`
 
   try {
