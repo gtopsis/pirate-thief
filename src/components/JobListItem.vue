@@ -1,15 +1,22 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   title: string
   url: string
   jobArea: string
   location: string
   company: string
 }>()
+
+const visitJobPage = () => {
+  window.open(props.url, '_blank')
+}
 </script>
 
 <template>
-  <div class="flex items-center justify-between py-2 px-4 mb-4 bg-gray-100 shadow-sm rounded">
+  <div
+    class="job flex items-center justify-between py-2 px-4 bg-gray-100 shadow-sm rounded"
+    @click="visitJobPage"
+  >
     <div class="flex items-center gap-x-3">
       <div>
         <h4 class="text-base font-bold leading-relaxed tracking-normal antialiased">
@@ -36,3 +43,9 @@ defineProps<{
     </div>
   </div>
 </template>
+
+<style scoped>
+.job:hover {
+  cursor: pointer;
+}
+</style>
