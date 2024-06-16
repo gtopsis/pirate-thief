@@ -7,7 +7,7 @@ defineProps<{
 </script>
 
 <template>
-  <ul class="w-full">
+  <ul class="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
     <li v-for="(job, index) in jobs" :key="index" class="mb-4 last:mb-0">
       <JobListItem
         :title="job[1]"

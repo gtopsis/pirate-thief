@@ -4,6 +4,7 @@ import axios from 'axios'
 import JobList from './components/JobList.vue'
 import FilterList from './components/FilterList.vue'
 import Spinner from './components/Spinner.vue'
+import RefreshButton from './components/RefreshButton.vue'
 
 const isLoading = ref(false)
 
@@ -56,15 +57,26 @@ onMounted(async () => {
     <section class="mx-auto">
       <header class="mb-12 py-4">
         <div class="mb-4 flex items-center justify-between">
-          <h5
-            class="block font-sans font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased text-2xl mb-4"
-          >
-            Jobs by startup-pirate
-          </h5>
+          <div>
+            <h5
+              class="logo block font-sans font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased text-2xl mb-4"
+            >
+              Pirate Thief
+            </h5>
 
-          <button @click="refreshData">
-            <span>Refresh</span>
-          </button>
+            <h6>
+              Jobs list by
+              <a
+                href="https://docs.google.com/spreadsheets/d/1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ/edit?gid=0#gid=0"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Startup Pirate
+              </a>
+            </h6>
+          </div>
+
+          <RefreshButton :isLoading="isLoading" @click="refreshData" />
         </div>
 
         <FilterList :filters="filters" />
@@ -77,3 +89,9 @@ onMounted(async () => {
     </section>
   </div>
 </template>
+
+<style scoped>
+.logo {
+  color: var(--color-brand);
+}
+</style>
