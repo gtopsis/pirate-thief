@@ -3,10 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #37474f;
-}
-
 #app {
   max-width: 1280px;
   width: 100%;
