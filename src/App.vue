@@ -53,45 +53,52 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="w-full h-full">
-    <section class="mx-auto">
-      <header class="mb-12 py-4">
-        <div class="mb-4 flex items-center justify-between">
-          <div>
-            <h5
-              class="logo block font-sans font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased text-2xl mb-4"
+  <div class="w-full">
+    <header class="mx-auto mb-12 py-6 sticky top-0">
+      <div class="mb-4 flex items-center justify-between">
+        <div class="">
+          <h5
+            class="logo static block font-sans font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased text-2xl mb-4"
+          >
+            Pirate Thief
+          </h5>
+
+          <h6>
+            Jobs list by
+            <a
+              href="https://docs.google.com/spreadsheets/d/1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ/edit?gid=0#gid=0"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              Pirate Thief
-            </h5>
-
-            <h6>
-              Jobs list by
-              <a
-                href="https://docs.google.com/spreadsheets/d/1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ/edit?gid=0#gid=0"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Startup Pirate
-              </a>
-            </h6>
-          </div>
-
-          <RefreshButton :isLoading="isLoading" @click="refreshData" />
+              Startup Pirate
+            </a>
+          </h6>
         </div>
 
-        <FilterList :filters="filters" />
-      </header>
+        <RefreshButton :isLoading="isLoading" @click="refreshData" />
+      </div>
 
-      <main class="w-full flex min-h-[80vh] items-center">
-        <Spinner v-if="isLoading" class="mx-auto self-center" />
-        <JobList v-else :jobs="validList" />
-      </main>
-    </section>
+      <FilterList :filters="filters" />
+    </header>
+
+    <main class="mx-auto w-full flex min-h-[80vh] items-center overflow-y-auto">
+      <Spinner v-if="isLoading" class="mx-auto self-center" />
+      <JobList v-else :jobs="validList" />
+    </main>
   </div>
 </template>
 
 <style scoped>
 .logo {
   color: var(--color-brand);
+}
+
+header {
+  background: var(--color-background);
+}
+
+header,
+main {
+  max-width: 1280px;
 }
 </style>
