@@ -19,15 +19,9 @@ const visitJobPage = () => {
   >
     <div class="flex items-center gap-x-3">
       <div>
-        <h4 class="text-base font-bold leading-relaxed tracking-normal antialiased">
-          <a
-            class="text-gray-600 font-bold"
-            :href="url"
-            target="_blank"
-            rel="noopener noreferrer"
-            >{{ title }}</a
-          >
-        </h4>
+        <h2 class="text-xl text-gray-600 font-bold leading-relaxed tracking-normal antialiased">
+          {{ title }}
+        </h2>
 
         <p class="text-gray-600 mb-4">
           at <b>{{ company }}</b> - {{ location }}
