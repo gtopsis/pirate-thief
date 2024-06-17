@@ -43,6 +43,8 @@ watch(
   { deep: true, immediate: true }
 )
 
+const jobsLastUpdated = ref<string | null>(null)
+
 const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID
 const apiKey = import.meta.env.VITE_GOOGLE_SPREADSHEET_API_KEY
 const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1?key=${apiKey}`
@@ -51,6 +53,8 @@ async function fetchData() {
 
   try {
     const response = await axios.get(url)
+    jobsLastUpdated.value = new Date().toLocaleString()
+
     return response.data.values
   } catch (error) {
     console.error(error)
@@ -85,7 +89,7 @@ onMounted(async () => {
       <div class="mb-4 flex items-center justify-between">
         <div class="">
           <h5
-            class="logo static block font-sans font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased text-2xl mb-4"
+            class="logo static block font-sans font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased text-2xl mb-2"
           >
             Pirate Thief
           </h5>
@@ -96,13 +100,18 @@ onMounted(async () => {
               href="https://docs.google.com/spreadsheets/d/1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ/edit?gid=0#gid=0"
               target="_blank"
               rel="noopener noreferrer"
+              class="font-bold"
             >
               Startup Pirate
             </a>
           </h6>
         </div>
 
-        <RefreshButton :isLoading="isLoading" @click="refreshData" />
+        <div class="flex items-center">
+          <p class="mb-0 mr-4">Updated: {{ jobsLastUpdated }}</p>
+
+          <RefreshButton :isLoading="isLoading" @click="refreshData" />
+        </div>
       </div>
 
       <FilterList :filters="filters" @filter:click="updateActiveFilters" />
