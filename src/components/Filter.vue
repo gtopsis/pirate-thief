@@ -3,15 +3,21 @@ defineProps<{
   name: string
   active: boolean
 }>()
+
+const emits = defineEmits<{
+  (e: 'click'): void
+}>()
 </script>
 
 <template>
   <div
+    class="filter relative grid select-none items-center whitespace-nowrap rounded-lg bg-gray-900 py-1.5 px-3 text-xs font-bold uppercase text-white shadow-sm ring-1 ring-inset ring-gray-500/10 my-1"
+    :class="{ 'filter--active': active }"
     data-dismissible="chip"
-    class="relative grid select-none items-center whitespace-nowrap rounded-lg bg-gray-900 py-1.5 px-3 font-sans text-xs font-bold uppercase text-white shadow-sm ring-1 ring-inset ring-gray-500/10 my-1"
+    @click="emits('click')"
   >
-    <span class="mr-5">{{ name }}</span>
-    <button
+    <span class="">{{ name }}</span>
+    <!-- <button
       data-dismissible-target="chip"
       class="!absolute top-2/4 right-1 mx-px h-5 max-h-[32px] w-5 max-w-[32px] -translate-y-2/4 select-none rounded-md text-center align-middle font-sans text-xs font-medium uppercase text-white transition-all hover:bg-white/10 active:bg-white/30 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
       type="button"
@@ -28,8 +34,16 @@ defineProps<{
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </span>
-    </button>
+    </button> -->
   </div>
 </template>
 
-<style lang="css" scoped></style>
+<style lang="css" scoped>
+.filter {
+  cursor: pointer;
+}
+
+.filter--active {
+  background-color: grey;
+}
+</style>
