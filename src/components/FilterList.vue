@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import Filter from './Filter.vue'
+import FilterListItem from './FilterListItem.vue'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -16,7 +16,7 @@ const filtersEntries = computed(() => props.filters.entries())
 <template>
   <ul class="w-full flex justify-center flex-wrap">
     <li v-for="[name, isEnabled] in filtersEntries" :key="name" class="mx-1 last:ml-0">
-      <Filter :name="name" :active="isEnabled" @click="emit('filter:click', name)" />
+      <FilterListItem :name="name" :active="isEnabled" @click="emit('filter:click', name)" />
     </li>
   </ul>
 </template>
