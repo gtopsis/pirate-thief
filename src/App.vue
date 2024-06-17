@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import JobList from './components/JobList.vue'
 import FilterList from './components/FilterList.vue'
@@ -9,28 +9,45 @@ import RefreshButton from './components/RefreshButton.vue'
 const isLoading = ref(false)
 
 const jobList = ref<any[]>([])
-const validList = computed<any[]>(
+const validJobsList = computed<any[]>(
   () => jobList.value?.slice(5).filter((item: any[]) => item.length !== 0) || []
 )
+const filteredJobList = computed(() => {
+  if (
+    filters.value.size == 0 ||
+    validJobsList.value.length == 0 ||
+    !Array.from(filters.value.values()).includes(true)
+  ) {
+    return validJobsList.value
+  }
 
-const filters = computed<Map<string, boolean>>(() => {
-  const result = new Map<string, boolean>()
-
-  validList.value.forEach((item: any[]) => {
-    if (item[3] && !result.has(item[3])) {
-      result.set(item[3], false)
-    }
+  return validJobsList.value.filter((job: any[]) => {
+    return filters.value.get(job[3]) == true
   })
-
-  return result
 })
 
+const filters = ref(new Map<string, boolean>())
+watch(
+  validJobsList,
+  () => {
+    const result = new Map<string, boolean>()
+
+    validJobsList.value.forEach((item: any[]) => {
+      if (item[3] && !result.has(item[3])) {
+        result.set(item[3], false)
+      }
+    })
+
+    filters.value = result
+  },
+  { deep: true, immediate: true }
+)
+
+const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID
+const apiKey = import.meta.env.VITE_GOOGLE_SPREADSHEET_API_KEY
+const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1?key=${apiKey}`
 async function fetchData() {
   isLoading.value = true
-
-  const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID
-  const apiKey = import.meta.env.VITE_GOOGLE_SPREADSHEET_API_KEY
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1?key=${apiKey}`
 
   try {
     const response = await axios.get(url)
@@ -45,6 +62,16 @@ async function fetchData() {
 const refreshData = async () => {
   jobList.value = []
   jobList.value = await fetchData()
+}
+
+const updateActiveFilters = (name: string) => {
+  if (filters.value.has(name)) {
+    filters.value.set(name, !filters.value.get(name))
+    const temp = filters.value
+
+    filters.value = new Map()
+    filters.value = temp
+  }
 }
 
 onMounted(async () => {
@@ -78,12 +105,12 @@ onMounted(async () => {
         <RefreshButton :isLoading="isLoading" @click="refreshData" />
       </div>
 
-      <FilterList :filters="filters" />
+      <FilterList :filters="filters" @filter:click="updateActiveFilters" />
     </header>
 
-    <main class="mx-auto w-full flex min-h-[80vh] items-center overflow-y-auto">
+    <main class="mx-auto w-full flex min-h-[80vh] overflow-y-auto">
       <Spinner v-if="isLoading" class="mx-auto self-center" />
-      <JobList v-else :jobs="validList" />
+      <JobList v-else :jobs="filteredJobList" />
     </main>
   </div>
 </template>
