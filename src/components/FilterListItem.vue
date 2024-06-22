@@ -11,12 +11,12 @@ const emits = defineEmits<{
 
 <template>
   <div
-    class="filter relative grid select-none items-center whitespace-nowrap rounded-lg bg-gray-900 py-1.5 px-3 text-xs font-bold uppercase text-white shadow-sm ring-1 ring-inset ring-gray-500/10 my-1"
+    class="filter relative grid select-none items-center whitespace-nowrap rounded-lg py-1.5 px-3 text-xs font-bold uppercase shadow-sm ring-1 ring-inset ring-gray-500/10 my-1"
     :class="{ 'filter--active': active }"
     data-dismissible="chip"
     @click="emits('click')"
   >
-    <span class="">{{ name }}</span>
+    <span class="filter__text font-bold">{{ name }}</span>
     <!-- <button
       data-dismissible-target="chip"
       class="!absolute top-2/4 right-1 mx-px h-5 max-h-[32px] w-5 max-w-[32px] -translate-y-2/4 select-none rounded-md text-center align-middle font-sans text-xs font-medium uppercase text-white transition-all hover:bg-white/10 active:bg-white/30 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
@@ -41,9 +41,14 @@ const emits = defineEmits<{
 <style lang="css" scoped>
 .filter {
   cursor: pointer;
+  background-color: var(--vt-c-black-soft);
 }
 
 .filter--active {
-  background-color: grey;
+  background-color: var(--vt-c-blue-dark);
+}
+
+.filter__text {
+  color: var(--color-text);
 }
 </style>
