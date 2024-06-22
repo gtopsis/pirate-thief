@@ -55,9 +55,11 @@ const updateActiveFilters = (name: string) => {
 }
 
 const jobsLastUpdated = ref<string | null>(null)
-const updatedTimeAgo = computed(() => {
+const updatedTimeAgoText = ref('')
+const getUpdatedTimeAgoText = () => {
   return jobsLastUpdated.value ? formatDistanceToNow(jobsLastUpdated.value) + ' ago' : ''
-})
+}
+
 const isLoading = ref(false)
 
 const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID
@@ -69,6 +71,7 @@ async function fetchData() {
   try {
     const response = await axios.get(jobsListSourceUrl)
     jobsLastUpdated.value = new Date().toLocaleString()
+    updatedTimeAgoText.value = getUpdatedTimeAgoText()
 
     return response.data.values
   } catch (error) {
@@ -85,6 +88,10 @@ const refreshData = async () => {
 
 onMounted(async () => {
   jobList.value = await fetchData()
+
+  window.setInterval(() => {
+    updatedTimeAgoText.value = getUpdatedTimeAgoText()
+  }, 1000)
 })
 </script>
 
@@ -97,13 +104,17 @@ onMounted(async () => {
         <div class="flex flex-col items-end">
           <RefreshButton class="w-min-[140px]" :isLoading="isLoading" @click="refreshData" />
 
-          <p v-if="updatedTimeAgo" class="mb-0 mt-2">
-            <small>Updated {{ updatedTimeAgo }}</small>
+          <p v-if="updatedTimeAgoText" class="mb-0 mt-2">
+            <small>Updated {{ updatedTimeAgoText }}</small>
           </p>
         </div>
       </div>
 
       <FilterList :filters="filters" @filter:click="updateActiveFilters" />
+
+      <div class="w-full text-center mt-4">
+        <span class="">{{ filteredJobList.length }} jobs</span>
+      </div>
     </header>
 
     <main class="mx-auto w-full flex min-h-[80vh] overflow-y-auto">
