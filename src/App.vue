@@ -3,9 +3,10 @@ import { computed, ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import JobList from './components/JobList.vue'
 import FilterList from './components/FilterList.vue'
-import BSpinner from './components/BSpinner.vue'
+import BaseSpinner from './components/BaseSpinner.vue'
 import RefreshButton from './components/RefreshButton.vue'
 import Brand from './components/Brand.vue'
+import { formatDistanceToNow } from 'date-fns'
 
 const jobList = ref<any[]>([])
 const validJobsList = computed<any[]>(
@@ -54,6 +55,9 @@ const updateActiveFilters = (name: string) => {
 }
 
 const jobsLastUpdated = ref<string | null>(null)
+const updatedTimeAgo = computed(() => {
+  return jobsLastUpdated.value ? formatDistanceToNow(jobsLastUpdated.value) + ' ago' : ''
+})
 const isLoading = ref(false)
 
 const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID
@@ -90,10 +94,12 @@ onMounted(async () => {
       <div class="mb-4 flex items-center justify-between">
         <Brand />
 
-        <div class="flex items-center">
-          <p class="mb-0 mr-4">Updated: {{ jobsLastUpdated }}</p>
+        <div class="flex flex-col items-end">
+          <RefreshButton class="w-min-[140px]" :isLoading="isLoading" @click="refreshData" />
 
-          <RefreshButton :isLoading="isLoading" @click="refreshData" />
+          <p v-if="updatedTimeAgo" class="mb-0 mt-2">
+            <small>Updated {{ updatedTimeAgo }}</small>
+          </p>
         </div>
       </div>
 
@@ -101,7 +107,7 @@ onMounted(async () => {
     </header>
 
     <main class="mx-auto w-full flex min-h-[80vh] overflow-y-auto">
-      <BSpinner v-if="isLoading" class="mx-auto self-center" />
+      <BaseSpinner v-if="isLoading" class="mx-auto self-center w-12 h-12" />
       <JobList v-else :jobs="filteredJobList" />
     </main>
   </div>
