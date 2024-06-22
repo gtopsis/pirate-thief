@@ -1,5 +1,7 @@
 # pirate-thief
 
+[![Deploy static content to Pages](https://github.com/gtopsis/pirate-thief/actions/workflows/main.yml/badge.svg)](https://github.com/gtopsis/pirate-thief/actions/workflows/main.yml)
+
 This template should help get you started developing with Vue 3 in Vite.
 
 ## Recommended IDE Setup
