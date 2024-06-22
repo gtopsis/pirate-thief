@@ -44,11 +44,15 @@ const emits = defineEmits<{
   background-color: var(--vt-c-black-soft);
 }
 
-.filter--active {
+.filter.filter--active {
   background-color: var(--vt-c-blue-dark);
 }
 
 .filter__text {
   color: var(--color-text);
+}
+
+.filter.filter--active .filter__text {
+  color: var(--vt-c-text-dark-1);
 }
 </style>

@@ -14,32 +14,43 @@ const visitJobPage = () => {
 
 <template>
   <div
-    class="job flex items-center justify-between py-2 px-4 bg-gray-100 shadow-sm rounded"
+    class="job flex flex-col justify-between py-2 px-4 shadow-sm hover:drop-shadow-lg rounded"
     @click="visitJobPage"
   >
-    <div class="flex items-center gap-x-3">
-      <div>
-        <h2 class="text-xl text-gray-600 font-bold leading-relaxed tracking-normal antialiased">
-          {{ title }}
-        </h2>
+    <header>
+      <h2 class="job__title text-xl font-bold leading-relaxed tracking-normal antialiased">
+        {{ title }}
+      </h2>
 
-        <p class="text-gray-600 mb-4">
-          at <b>{{ company }}</b> - {{ location }}
-        </p>
+      <p class="job__details mb-4">
+        at <b>{{ company }}</b> - {{ location }}
+      </p>
+    </header>
 
-        <div class="grid grid-flow-col auto-cols-max md:auto-cols gap-2 pr-2">
-          <span
-            class="inline-flex items-center rounded-md bg-gray-200 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10"
-            >{{ jobArea }}</span
-          >
-        </div>
-      </div>
-    </div>
+    <footer class="grid grid-flow-col auto-cols-max md:auto-cols gap-2 pr-2">
+      <span
+        class="job__area inline-flex items-center rounded-md bg-gray-200 px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-500/10"
+        >{{ jobArea }}</span
+      >
+    </footer>
   </div>
 </template>
 
 <style scoped>
+.job {
+  background-color: var(--color-background-mute);
+  min-height: 145px;
+}
+
 .job:hover {
   cursor: pointer;
+}
+
+.job__title {
+  color: var(--vt-c-blue-light);
+}
+
+.job__area {
+  color: var(--vt-c-text-light-1);
 }
 </style>
