@@ -22,7 +22,7 @@ const sourceUrl =
 
 <style lang="css" scoped>
 .brand {
-  color: var(--color-brand);
+  color: var(--color-heading);
 }
 
 .jobs-source-url {
