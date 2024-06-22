@@ -6,18 +6,26 @@ const sourceUrl =
 <template>
   <div class="">
     <h5
-      class="logo static block font-sans font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased text-2xl mb-2"
+      class="brand logo static block font-sans font-bold leading-snug tracking-normal antialiased text-2xl mb-2"
     >
       Pirate Thief
     </h5>
 
     <h6>
       Jobs list by
-      <a :href="sourceUrl" target="_blank" rel="noopener noreferrer" class="font-bold">
-        Startup Pirate
+      <a :href="sourceUrl" target="_blank" rel="noopener noreferrer" class="font-weight-800">
+        <span class="jobs-source-url">Startup Pirate</span>
       </a>
     </h6>
   </div>
 </template>
 
-<style lang="css" scoped></style>
+<style lang="css" scoped>
+.brand {
+  color: var(--color-brand);
+}
+
+.jobs-source-url {
+  color: var(--vt-c-red-light);
+}
+</style>
