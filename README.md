@@ -1,18 +1,14 @@
 # pirate-thief
 
-This template should help get you started developing with Vue 3 in Vite.
+### Job listing app to showcase the public job adds from the [Startup Pirate](https://docs.google.com/spreadsheets/d/1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ/edit?gid=0#gid=0).
 
-## Recommended IDE Setup
+### [Demo](https://gtopsis.github.io/pirate-thief/)
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+<br>
 
-## Type Support for `.vue` Imports in TS
+<img src="./pirate-thief-screenshot.png" alt="Screenshot of pirate-thief app" width="800" height="auto" style="display: block; margin: 0 auto;">
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vitejs.dev/config/).
+<br>
 
 ## Project Setup
 
