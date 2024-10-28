@@ -119,7 +119,7 @@ onMounted(async () => {
 
     <main class="mx-auto w-full flex min-h-[80vh] overflow-y-auto">
       <BaseSpinner v-if="isLoading" class="mx-auto self-center w-12 h-12" />
-      <JobList v-else :jobs="filteredJobList" />
+      <JobList v-else :jobs="filteredJobList" class="mx-auto"/>
     </main>
   </div>
 </template>
