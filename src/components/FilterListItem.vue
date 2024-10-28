@@ -50,6 +50,8 @@ const emits = defineEmits<{
 
 .filter__text {
   color: var(--color-text);
+  /* TODO: enrich relative css vars regarding text color for dark & light themes */
+  color: white;
 }
 
 .filter.filter--active .filter__text {
