@@ -17,6 +17,7 @@
     "@typescript-eslint/parser": "^8.12.2",
     "axios": "^1.7.7",
     "date-fns": "^4.1.0",
+    "globals": "^15.11.0",
     "google-auth-library": "^9.14.2",
     "google-spreadsheet": "^4.1.4",
     "pinia": "^2.2.4",

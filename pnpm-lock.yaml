@@ -14,6 +14,9 @@ dependencies:
   date-fns:
     specifier: ^4.1.0
     version: 4.1.0
+  globals:
+    specifier: ^15.11.0
+    version: 15.11.0
   google-auth-library:
     specifier: ^9.14.2
     version: 9.14.2
@@ -2210,6 +2213,11 @@ packages:
   /globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
     engines: {node: '>=18'}
+
+  /globals@15.11.0:
+    resolution: {integrity: sha512-yeyNSjdbyVaWurlwCpcA6XNBrHTMIeDdj0/hnvX/OLJ9ekOXYbLsLinH/MucQyGvNnXhidTdNhTtJaffL2sMfw==}
+    engines: {node: '>=18'}
+    dev: false
 
   /google-auth-library@9.14.2:
     resolution: {integrity: sha512-R+FRIfk1GBo3RdlRYWPdwk8nmtVUOn6+BkDomAC46KoU8kzXzE1HLmOasSCbWUByMMAGkknVF0G5kQ69Vj7dlA==}
