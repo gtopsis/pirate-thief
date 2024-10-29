@@ -8,7 +8,11 @@ defineProps<{
 
 <template>
   <ul class="w-full grid grid-cols-1 max-w-[700px]">
-    <li v-for="(job, index) in jobs" :key="index" class="mb-4 last:mb-0">
+    <li
+      v-for="(job, index) in jobs"
+      :key="index"
+      class="mb-4 last:mb-0"
+    >
       <JobListItem
         :title="job[1]"
         :url="job[4]"

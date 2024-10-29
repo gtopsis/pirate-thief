@@ -24,7 +24,10 @@ const refreshData = () => {
     class="inline-flex items-center py-1.5 px-3 text-sm font-medium border focus:z-10 focus:ring-2 focus:ring-white-700 focus:text-white-700"
     @click="refreshData"
   >
-    <BaseSpinner v-if="isTemporaryNotAvailable" class="mr-2 w-5 h-5" />
+    <BaseSpinner
+      v-if="isTemporaryNotAvailable"
+      class="mr-2 w-5 h-5"
+    />
 
     <span v-if="!isTemporaryNotAvailable">Refresh</span>
     <span v-else> Loading... </span>

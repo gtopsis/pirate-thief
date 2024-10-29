@@ -30,8 +30,7 @@ const visitJobPage = () => {
     <footer class="grid grid-flow-col auto-cols-max md:auto-cols gap-2 pr-2">
       <span
         class="job__area inline-flex items-center rounded-md bg-gray-200 px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-500/10"
-        >{{ jobArea }}</span
-      >
+      >{{ jobArea }}</span>
     </footer>
   </div>
 </template>

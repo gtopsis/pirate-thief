@@ -13,7 +13,12 @@ const sourceUrl =
 
     <h6>
       Jobs list by
-      <a :href="sourceUrl" target="_blank" rel="noopener noreferrer" class="font-weight-800">
+      <a
+        :href="sourceUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="font-weight-800"
+      >
         <span class="jobs-source-url">Startup Pirate</span>
       </a>
     </h6>
