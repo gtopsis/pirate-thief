@@ -7,39 +7,50 @@ import BaseSpinner from './components/BaseSpinner.vue'
 import RefreshButton from './components/RefreshButton.vue'
 import Brand from './components/Brand.vue'
 import { formatDistanceToNow } from 'date-fns'
+import type { Job } from './types/types'
 
-const jobList = ref<any[]>([])
-const validJobsList = computed<any[]>(
-  () => jobList.value?.slice(5).filter((item: any[]) => item.length !== 0) || []
-)
+const spreadsheetData = ref<string[][]>([])
+const validJobList = computed<Job[]>(() => {
+  const numberOfHeadersRows = 5
+  const numberOfJobDetails = 5
+
+  return (
+    (spreadsheetData.value
+      ?.slice(numberOfHeadersRows)
+      .filter((item: string[]) => item.length === numberOfJobDetails) as Job[]) || []
+  )
+})
 
 const filters = ref(new Map<string, boolean>())
-const filteredJobList = computed(() => {
+const filteredJobList = computed<Job[]>(() => {
   if (
     filters.value.size == 0 ||
-    validJobsList.value.length == 0 ||
+    validJobList.value.length == 0 ||
     !Array.from(filters.value.values()).includes(true)
   ) {
-    return validJobsList.value
+    return validJobList.value
   }
 
-  return validJobsList.value.filter((job: any[]) => {
-    return filters.value.get(job[3]) == true
+  return validJobList.value.filter((job: Job) => {
+    const jobTechArea  = job[3]
+
+    return filters.value.get(jobTechArea) === true
   })
 })
 
 watch(
-  validJobsList,
+  validJobList,
   () => {
-    const result = new Map<string, boolean>()
+    const _filters = new Map<string, boolean>()
 
-    validJobsList.value.forEach((item: any[]) => {
-      if (item[3] && !result.has(item[3])) {
-        result.set(item[3], false)
+    validJobList.value.forEach((job: Job) => {
+      const jobTechArea = job[3]
+      if (jobTechArea && !_filters.has(jobTechArea)) {
+        _filters.set(jobTechArea, false)
       }
     })
 
-    filters.value = result
+    filters.value = _filters
   },
   { deep: true, immediate: true }
 )
@@ -82,12 +93,12 @@ async function fetchData() {
 }
 
 const refreshData = async () => {
-  jobList.value = []
-  jobList.value = await fetchData()
+  spreadsheetData.value = []
+  spreadsheetData.value = await fetchData()
 }
 
 onMounted(async () => {
-  jobList.value = await fetchData()
+  spreadsheetData.value = await fetchData()
 
   window.setInterval(() => {
     updatedTimeAgoText.value = getUpdatedTimeAgoText()
