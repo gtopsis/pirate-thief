@@ -14,7 +14,7 @@ const visitJobPage = () => {
 
 <template>
   <div
-    class="job flex flex-col justify-between py-2 px-4 shadow-sm hover:cursor-pointer hover:drop-shadow-lg rounded"
+    class="job flex flex-col justify-between py-2 px-4 shadow-md hover:cursor-pointer rounded"
     @click="visitJobPage"
   >
     <header>
