@@ -7,31 +7,52 @@ import RefreshButton from './components/RefreshButton.vue'
 import Brand from './components/Brand.vue'
 import { formatDistanceToNow } from 'date-fns'
 import type { Job } from './types/types'
+import { useFetch } from './composables/fetch'
 
-const spreadsheetData = ref<string[][]>([])
+const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID
+const apiKey = import.meta.env.VITE_GOOGLE_SPREADSHEET_API_KEY
+const jobsListSourceUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1?key=${apiKey}`
+
+const { isLoading, error, data, fetchData } = useFetch<{
+  majorDimension: string
+  range: string
+  values: string[][]
+}>(jobsListSourceUrl)
+async function fetchJobs() {
+  await fetchData()
+  if (error.value) {
+    console.error(error.value)
+
+    return
+  }
+
+  jobsLastUpdated.value = new Date().toLocaleString()
+  updatedTimeAgoText.value = getUpdatedTimeAgoText()
+}
+
 const validJobList = computed<Job[]>(() => {
   const numberOfHeadersRows = 5
   const numberOfJobDetails = 5
 
-  return (
-    (spreadsheetData.value
-      ?.slice(numberOfHeadersRows)
-      .filter((item: string[]) => item.length === numberOfJobDetails) as Job[]) || []
-  )
+  const validJobs = data.value?.values
+    ?.slice(numberOfHeadersRows)
+    .filter((item: string[]) => item.length === numberOfJobDetails) as Job[]
+
+  return validJobs || []
 })
 
 const filters = ref(new Map<string, boolean>())
 const filteredJobList = computed<Job[]>(() => {
   if (
-    filters.value.size == 0 ||
-    validJobList.value.length == 0 ||
+    filters.value.size === 0 ||
+    validJobList.value.length === 0 ||
     !Array.from(filters.value.values()).includes(true)
   ) {
     return validJobList.value
   }
 
   return validJobList.value.filter((job: Job) => {
-    const jobTechArea  = job[3]
+    const jobTechArea = job[3]
 
     return filters.value.get(jobTechArea) === true
   })
@@ -70,40 +91,14 @@ const getUpdatedTimeAgoText = () => {
   return jobsLastUpdated.value ? formatDistanceToNow(jobsLastUpdated.value) + ' ago' : ''
 }
 
-const isLoading = ref(false)
 
-const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID
-const apiKey = import.meta.env.VITE_GOOGLE_SPREADSHEET_API_KEY
-const jobsListSourceUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1?key=${apiKey}`
-async function fetchData() {
-  isLoading.value = true
-
-  try {
-    const response = await fetch(jobsListSourceUrl)
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
-    }
-
-    const jsonData = await response.json(); 
-    
-    jobsLastUpdated.value = new Date().toLocaleString()
-    updatedTimeAgoText.value = getUpdatedTimeAgoText()
-    
-    return jsonData.values;
-  } catch (error) {
-    console.error(error)
-  } finally {
-    isLoading.value = false
-  }
-}
 
 const refreshData = async () => {
-  spreadsheetData.value = []
-  spreadsheetData.value = await fetchData()
+  await fetchJobs()
 }
 
 onMounted(async () => {
-  spreadsheetData.value = await fetchData()
+  await fetchJobs()
 
   window.setInterval(() => {
     updatedTimeAgoText.value = getUpdatedTimeAgoText()
