@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
-import axios from 'axios'
 import JobList from './components/JobList.vue'
 import FilterList from './components/FilterList.vue'
 import BaseSpinner from './components/BaseSpinner.vue'
@@ -80,11 +79,17 @@ async function fetchData() {
   isLoading.value = true
 
   try {
-    const response = await axios.get(jobsListSourceUrl)
+    const response = await fetch(jobsListSourceUrl)
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+
+    const jsonData = await response.json(); 
+    
     jobsLastUpdated.value = new Date().toLocaleString()
     updatedTimeAgoText.value = getUpdatedTimeAgoText()
-
-    return response.data.values
+    
+    return jsonData.values;
   } catch (error) {
     console.error(error)
   } finally {
@@ -108,30 +113,20 @@ onMounted(async () => {
 
 <template>
   <div class="w-full">
-    <header class="mx-auto mb-12 py-6 sticky top-0">
+    <header class="mx-auto mb-12 pt-6 pb-3 sticky top-0">
       <div class="mb-4 flex items-center justify-between">
         <Brand />
 
         <div class="flex flex-col items-end">
-          <RefreshButton
-            class="w-min-[140px]"
-            :is-loading="isLoading"
-            @click="refreshData"
-          />
+          <RefreshButton class="w-min-[140px]" :is-loading="isLoading" @click="refreshData" />
 
-          <p
-            v-if="updatedTimeAgoText"
-            class="mb-0 mt-2"
-          >
-            <small>Updated {{ updatedTimeAgoText }}</small>
+          <p v-if="updatedTimeAgoText" class="mb-0 mt-2">
+            <small>Jobs fetched {{ updatedTimeAgoText }}</small>
           </p>
         </div>
       </div>
 
-      <FilterList
-        :filters="filters"
-        @filter:click="updateActiveFilters"
-      />
+      <FilterList :filters="filters" @filter:click="updateActiveFilters" />
 
       <div class="w-full text-center mt-4">
         <span class="">{{ filteredJobList.length }} jobs</span>
@@ -139,15 +134,9 @@ onMounted(async () => {
     </header>
 
     <main class="mx-auto w-full flex min-h-[80vh] overflow-y-auto">
-      <BaseSpinner
-        v-if="isLoading"
-        class="mx-auto self-center w-12 h-12"
-      />
-      <JobList
-        v-else
-        :jobs="filteredJobList"
-        class="mx-auto"
-      />
+      <BaseSpinner v-if="isLoading" class="mx-auto self-center w-12 h-12" />
+
+      <JobList v-else :jobs="filteredJobList" class="mx-auto" />
     </main>
   </div>
 </template>
@@ -163,6 +152,6 @@ header {
 
 header,
 main {
-  max-width: 1280px;
+  max-width: 1024px;
 }
 </style>
