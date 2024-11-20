@@ -6,18 +6,17 @@ import BaseSpinner from './components/BaseSpinner.vue'
 import RefreshButton from './components/RefreshButton.vue'
 import Brand from './components/Brand.vue'
 import { formatDistanceToNow } from 'date-fns'
-import type { Job } from './types/types'
+import type { Job, SpreadSheetResponse } from './types/types'
 import { useFetch } from './composables/fetch'
+
+const jobsLastUpdated = ref<string | null>(null)
+const updatedTimeAgoText = ref('')
 
 const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID
 const apiKey = import.meta.env.VITE_GOOGLE_SPREADSHEET_API_KEY
 const jobsListSourceUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1?key=${apiKey}`
 
-const { isLoading, error, data, fetchData } = useFetch<{
-  majorDimension: string
-  range: string
-  values: string[][]
-}>(jobsListSourceUrl)
+const { isLoading, error, data, fetchData } = useFetch<SpreadSheetResponse>(jobsListSourceUrl)
 async function fetchJobs() {
   await fetchData()
   if (error.value) {
@@ -58,40 +57,41 @@ const filteredJobList = computed<Job[]>(() => {
   })
 })
 
+const initFilters = () => {
+  const _filters = new Map<string, boolean>()
+
+  validJobList.value.forEach((job: Job) => {
+    const jobTechArea = job[3]
+
+    _filters.set(jobTechArea, !jobTechArea || _filters.has(jobTechArea))
+  })
+
+  filters.value = _filters
+}
+
 watch(
   validJobList,
   () => {
-    const _filters = new Map<string, boolean>()
-
-    validJobList.value.forEach((job: Job) => {
-      const jobTechArea = job[3]
-      if (jobTechArea && !_filters.has(jobTechArea)) {
-        _filters.set(jobTechArea, false)
-      }
-    })
-
-    filters.value = _filters
+    initFilters()
   },
   { deep: true, immediate: true }
 )
 
-const updateActiveFilters = (name: string) => {
-  if (filters.value.has(name)) {
-    filters.value.set(name, !filters.value.get(name))
-    const currentFilters = filters.value
-
-    filters.value = new Map()
-    filters.value = currentFilters
+const activateFilter = (name: string) => {
+  if (!filters.value.has(name)) {
+    return
   }
+
+  filters.value.set(name, !filters.value.get(name))
+  const currentFilters = filters.value
+
+  filters.value = new Map()
+  filters.value = currentFilters
 }
 
-const jobsLastUpdated = ref<string | null>(null)
-const updatedTimeAgoText = ref('')
 const getUpdatedTimeAgoText = () => {
   return jobsLastUpdated.value ? formatDistanceToNow(jobsLastUpdated.value) + ' ago' : ''
 }
-
-
 
 const refreshData = async () => {
   await fetchJobs()
@@ -121,7 +121,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <FilterList :filters="filters" @filter:click="updateActiveFilters" />
+      <FilterList :filters="filters" @filter:click="activateFilter" />
 
       <div class="w-full text-center mt-4">
         <span class="">{{ filteredJobList.length }} jobs</span>
