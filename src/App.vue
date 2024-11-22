@@ -63,7 +63,9 @@ const initFilters = () => {
   validJobList.value.forEach((job: Job) => {
     const jobTechArea = job[3]
 
-    _filters.set(jobTechArea, !jobTechArea || _filters.has(jobTechArea))
+    if(jobTechArea && !_filters.has(jobTechArea)){
+      _filters.set(jobTechArea, false)
+    }
   })
 
   filters.value = _filters
