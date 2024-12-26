@@ -29,7 +29,7 @@ const refreshData = () => {
       class="mr-2 w-5 h-5"
     />
 
-    <span v-if="!isTemporaryNotAvailable">Refresh</span>
+    <span v-if="!isTemporaryNotAvailable">Refetch Jobs</span>
     <span v-else> Loading... </span>
   </button>
 </template>

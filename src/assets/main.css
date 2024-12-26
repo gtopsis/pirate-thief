@@ -12,10 +12,9 @@
   font-weight: normal;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: var(--vt-c-red-dark);
-  }
+a:hover {
+  text-decoration:underline;
+  text-decoration-color: var(--color-text-underline-color);
 }
 
 @media (min-width: 1024px) {
@@ -23,10 +22,4 @@
     display: flex;
     place-items: center;
   }
-
-  /* #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  } */
 }
