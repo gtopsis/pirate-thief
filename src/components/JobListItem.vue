@@ -42,10 +42,16 @@ const visitJobPage = () => {
 }
 
 .job__title {
-  color: var(--vt-c-blue-light);
+  color: var(--vt-c-blue-dark);
 }
 
 .job__area {
   color: var(--vt-c-text-light-1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .job__title {
+  color: var(--vt-c-blue-light);
+}
 }
 </style>
