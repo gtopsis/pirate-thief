@@ -3,7 +3,7 @@ name: Fetch Public Repos README's
 on:
   schedule:
     # Run once every single day.
-    - cron: '0 0 * * *'
+    - cron: '0 0 */14 * *'
   workflow_dispatch:
 permissions:
   contents: write
