@@ -4,21 +4,16 @@ const sourceUrl =
 </script>
 
 <template>
-  <div class="">
+  <div class="text-center">
     <h5
-      class="brand logo static block font-sans font-bold leading-snug tracking-normal antialiased text-2xl mb-2"
+      class="brand static block font-sans font-bold leading-snug tracking- antialiased text-5xl md:text-7xl mb-2"
     >
       Pirate Thief
     </h5>
 
-    <h6>
-      Jobs list by
-      <a
-        :href="sourceUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="font-weight-800"
-      >
+    <h6 class="text-lg md:text-xl">
+      A simple job listing app to showcase the public Jobs list by
+      <a :href="sourceUrl" target="_blank" rel="noopener noreferrer" class="font-weight-800">
         <span class="jobs-source-url">Startup Pirate</span>
       </a>
     </h6>
@@ -27,7 +22,8 @@ const sourceUrl =
 
 <style lang="css" scoped>
 .brand {
-  color: var(--color-heading);
+  color: var(--color-text-1);
+  font-family: 'Roboto';
 }
 
 .jobs-source-url {
