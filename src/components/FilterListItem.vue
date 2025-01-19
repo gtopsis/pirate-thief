@@ -49,7 +49,7 @@ const emits = defineEmits<{
 }
 
 .filter__text {
-  color: var(--color-text);
+  color: var(--color-text-dark-2);
   /* TODO: enrich relative css vars regarding text color for dark & light themes */
   color: white;
 }

@@ -63,7 +63,7 @@ const initFilters = () => {
   validJobList.value.forEach((job: Job) => {
     const jobTechArea = job[3]
 
-    if(jobTechArea && !_filters.has(jobTechArea)){
+    if (jobTechArea && !_filters.has(jobTechArea)) {
       _filters.set(jobTechArea, false)
     }
   })
@@ -110,17 +110,13 @@ onMounted(async () => {
 
 <template>
   <div class="w-full">
-    <header class="mx-auto mb-12 pt-6 pb-3 sticky top-0">
-      <div class="mb-4 flex items-center justify-between">
-        <Brand />
+    <header class="mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center">
+      <Brand class="mb-8" />
 
-        <div class="flex flex-col items-end">
-          <RefreshButton class="w-min-[140px]" :is-loading="isLoading" @click="refreshData" />
+      <div class="flex justify-center items-center gap-2 mb-4">
+        <p v-if="updatedTimeAgoText" class="mb-0">Jobs fetched {{ updatedTimeAgoText }}</p>
 
-          <p v-if="updatedTimeAgoText" class="mb-0 mt-2">
-            <small>Jobs fetched {{ updatedTimeAgoText }}</small>
-          </p>
-        </div>
+        <RefreshButton class="mb-0" :is-loading="isLoading" @click="refreshData" />
       </div>
 
       <FilterList :filters="filters" @filter:click="activateFilter" />
@@ -139,12 +135,8 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.logo {
-  color: var(--color-brand);
-}
-
 header {
-  background: var(--color-background);
+  background-color: var(--color-bg);
 }
 
 header,
