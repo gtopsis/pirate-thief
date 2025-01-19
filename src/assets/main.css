@@ -1,25 +1,6 @@
+@import './variable.css';
 @import './base.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-#app {
-  width: 100%;
-  min-height: 100vh;
-  overflow-y: auto;
-  margin: 0 auto;
-  padding: 0 2rem;
-  font-weight: normal;
-}
-
-a:hover {
-  text-decoration:underline;
-  text-decoration-color: var(--color-text-underline-color);
-}
-
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-}
