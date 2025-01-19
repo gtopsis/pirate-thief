@@ -37,7 +37,7 @@ const visitJobPage = () => {
 
 <style scoped>
 .job {
-  background-color: var(--color-background-mute);
+  background-color: var(--color-bg-mute);
   min-height: 125px;
 }
 
