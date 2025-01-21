@@ -21,16 +21,19 @@ const visitJobPage = () => {
       <h2 class="job__title text-xl font-bold leading-relaxed tracking-normal antialiased">
         {{ title }}
       </h2>
-
-      <p class="job__details mb-4">
-        at <b>{{ company }}</b> - {{ location }}
-      </p>
     </header>
 
-    <footer class="grid grid-flow-col auto-cols-max md:auto-cols gap-2 pr-2">
-      <span
-        class="job__area inline-flex items-center rounded-md bg-gray-200 px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-500/10"
-      >{{ jobArea }}</span>
+    <footer class="flex flex-col md:flex-row w-full md:justify-between gap-2">
+      <p class="job__details">
+        at <b>{{ company }}</b> - {{ location }}
+      </p>
+
+      <div>
+        <span
+          class="job__area inline-flex items-center rounded-md bg-gray-200 px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-500/10"
+          >{{ jobArea }}</span
+        >
+      </div>
     </footer>
   </div>
 </template>
@@ -38,7 +41,7 @@ const visitJobPage = () => {
 <style scoped>
 .job {
   background-color: var(--color-bg-mute);
-  min-height: 125px;
+  min-height: 75px;
 }
 
 .job__title {
@@ -51,7 +54,7 @@ const visitJobPage = () => {
 
 @media (prefers-color-scheme: dark) {
   .job__title {
-  color: var(--vt-c-blue-light);
-}
+    color: var(--vt-c-blue-light);
+  }
 }
 </style>
