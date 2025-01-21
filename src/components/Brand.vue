@@ -26,16 +26,16 @@ const sourceUrl =
 }
 
 .subtitle {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
 }
 
 @media only screen and (min-width: 700px) {
   .title {
-    font-size: 4rem;
+    font-size: 3.15rem;
   }
 
   .subtitle {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 }
 
