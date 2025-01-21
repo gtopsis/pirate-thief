@@ -5,25 +5,38 @@ const sourceUrl =
 
 <template>
   <div class="text-center">
-    <h5
-      class="brand static block font-sans font-bold leading-snug tracking- antialiased text-5xl md:text-7xl mb-2"
-    >
+    <h1 class="title static block font-sans font-bold leading-snug antialiased mb-2">
       Pirate Thief
-    </h5>
+    </h1>
 
-    <h6 class="text-lg md:text-xl">
+    <h2 class="subtitle">
       A simple job listing app to showcase the public Jobs list by
       <a :href="sourceUrl" target="_blank" rel="noopener noreferrer" class="font-weight-800">
         <span class="jobs-source-url">Startup Pirate</span>
       </a>
-    </h6>
+    </h2>
   </div>
 </template>
 
 <style lang="css" scoped>
-.brand {
+.title {
   color: var(--color-text-1);
   font-family: 'Roboto';
+  font-size: 3rem;
+}
+
+.subtitle {
+  font-size: 1.25rem;
+}
+
+@media only screen and (min-width: 700px) {
+  .title {
+    font-size: 4.5rem;
+  }
+
+  .subtitle {
+    font-size: 1.5rem;
+  }
 }
 
 .jobs-source-url {
