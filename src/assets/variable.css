@@ -105,7 +105,7 @@
   --color-brand-dark: var(--vt-c-green-dark);
   --color-brand-highlight: var(--vt-c-brand-dark);
 
-  --color-text-underline: var(--vt-c-red-dark);
+  --color-text-underline: var(--vt-c-blue-darker);
 
   --section-gap: 160px;
 }
@@ -134,7 +134,7 @@
     --color-text-inverse-4: var(--vt-c-text-light-4);
 
     
-    --color-text-underline: var(--vt-c-white-mute); 
+  --color-text-underline: var(--vt-c-blue-lighter);
   }
 }
 

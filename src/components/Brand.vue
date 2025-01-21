@@ -11,8 +11,13 @@ const sourceUrl =
 
     <h2 class="subtitle">
       A simple job listing app to showcase the public Jobs list by
-      <a :href="sourceUrl" target="_blank" rel="noopener noreferrer" class="font-weight-800">
-        <span class="jobs-source-url">Startup Pirate</span>
+      <a
+        :href="sourceUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="jobs-source-url font-weight-800"
+      >
+        <span>Startup Pirate</span>
       </a>
     </h2>
   </div>
@@ -40,6 +45,14 @@ const sourceUrl =
 }
 
 .jobs-source-url {
-  color: var(--vt-c-red-light);
+  color: var(--vt-c-red-dark);
+  text-decoration-color: var(--vt-c-red-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  .jobs-source-url {
+    color: var(--vt-c-red-light);
+    text-decoration-color: var(--vt-c-red-light);
+  }
 }
 </style>
