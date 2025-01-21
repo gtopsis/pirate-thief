@@ -22,7 +22,7 @@ const sourceUrl =
 .title {
   color: var(--color-text-1);
   font-family: 'Roboto';
-  font-size: 3rem;
+  font-size: 2.5rem;
 }
 
 .subtitle {
@@ -31,7 +31,7 @@ const sourceUrl =
 
 @media only screen and (min-width: 700px) {
   .title {
-    font-size: 4.5rem;
+    font-size: 4rem;
   }
 
   .subtitle {

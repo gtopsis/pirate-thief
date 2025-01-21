@@ -18,9 +18,9 @@ const visitJobPage = () => {
     @click="visitJobPage"
   >
     <header>
-      <h2 class="job__title text-xl font-bold leading-relaxed tracking-normal antialiased">
+      <a class="job__title text-xl font-bold leading-relaxed tracking-normal antialiased">
         {{ title }}
-      </h2>
+      </a>
     </header>
 
     <footer class="flex flex-col md:flex-row w-full md:justify-between gap-2">
