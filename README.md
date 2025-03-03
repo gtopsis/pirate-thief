@@ -1,6 +1,6 @@
 # pirate-thief
 
-### Job listing app to showcase the public job adds from the [Startup Pirate](https://docs.google.com/spreadsheets/d/1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ/edit?gid=0#gid=0).
+### Job listing app (source: [Startup Pirate](https://docs.google.com/spreadsheets/d/1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ/edit?gid=0#gid=0)).
 
 It could be characterized as a scraper which parses an online and public google spreadsheed, aggregates and showcase the list of job ads in an intuitive way.
 
