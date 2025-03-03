@@ -2,6 +2,8 @@ import globals from 'globals'
 import js from '@eslint/js'
 import eslintPluginVue from 'eslint-plugin-vue'
 import ts from 'typescript-eslint'
+import prettier from 'eslint-plugin-prettier'
+import eslintConfigPrettier from 'eslint-config-prettier'
 
 export default [
   // config envs
@@ -10,17 +12,24 @@ export default [
       globals: { ...globals.browser, ...globals.node }
     }
   },
-  
+
   // config parsers
   js.configs.recommended,
   ...ts.configs.recommended,
   ...eslintPluginVue.configs['flat/recommended'],
+  eslintConfigPrettier,
   {
     files: ['*.vue', '**/*.vue'],
     languageOptions: {
       parserOptions: {
         parser: '@typescript-eslint/parser'
       }
+    },
+    plugins: {
+      prettier
+    },
+    rules: {
+      'prettier/prettier': 'error'
     }
   },
 
