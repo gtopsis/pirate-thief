@@ -111,25 +111,29 @@ onMounted(async () => {
 <template>
   <div class="w-full">
     <header class="mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center">
-      <Brand class="mb-8" />
-
-      <div class="flex justify-center items-center gap-2 mb-4">
-        <p v-if="updatedTimeAgoText" class="mb-0">Jobs fetched {{ updatedTimeAgoText }}</p>
-
-        <RefreshButton class="mb-0" :is-loading="isLoading" @click="refreshData" />
-      </div>
-
-      <FilterList :filters="filters" @filter:click="activateFilter" />
-
-      <div class="w-full text-center mt-4">
-        <span class="">{{ filteredJobList.length }} jobs</span>
-      </div>
+      <Brand />
     </header>
 
-    <main class="mx-auto w-full flex min-h-[80vh] overflow-y-auto">
-      <BaseSpinner v-if="isLoading" class="mx-auto self-center w-12 h-12" />
+    <main class="flex flex-col relative mx-auto w-full">
+      <div class="toolbar sticky top-0 py-2">
+        <div class="flex justify-center items-center gap-2 mb-4">
+          <p v-if="updatedTimeAgoText" class="mb-0">Jobs fetched {{ updatedTimeAgoText }}</p>
 
-      <JobList v-else :jobs="filteredJobList" class="mx-auto" />
+          <RefreshButton class="mb-0" :is-loading="isLoading" @click="refreshData" />
+        </div>
+
+        <FilterList :filters="filters" @filter:click="activateFilter" />
+
+        <div class="w-full text-center mt-4">
+          <span class="">{{ filteredJobList.length }} jobs</span>
+        </div>
+      </div>
+
+      <div class="flex min-h-[80vh] overflow-y-auto">
+        <BaseSpinner v-if="isLoading" class="mx-auto self-center w-12 h-12" />
+        <JobList v-else :jobs="filteredJobList" class="mx-auto" />
+        <JobList v-else :jobs="filteredJobList" class="mx-auto" />
+      </div>
     </main>
   </div>
 </template>
@@ -142,5 +146,9 @@ header {
 header,
 main {
   max-width: 1024px;
+}
+
+.toolbar {
+  background-color: var(--color-bg);
 }
 </style>
