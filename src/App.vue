@@ -9,8 +9,8 @@ import { formatDistanceToNow } from 'date-fns'
 import type { Job, SpreadSheetResponse } from './types/types'
 import { useFetch } from './composables/fetch'
 
-const jobsLastUpdated = ref<string | null>(null)
-const updatedTimeAgoText = ref('')
+const jobsLastUpdatedDate = ref<string | null>(null)
+const jobsLastUpdatedText = ref('Jobs has not been fetched yet')
 
 const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID
 const apiKey = import.meta.env.VITE_GOOGLE_SPREADSHEET_API_KEY
@@ -25,8 +25,8 @@ async function fetchJobs() {
     return
   }
 
-  jobsLastUpdated.value = new Date().toLocaleString()
-  updatedTimeAgoText.value = getUpdatedTimeAgoText()
+  jobsLastUpdatedDate.value = new Date().toLocaleString()
+  jobsLastUpdatedText.value = `Jobs fetch ${getUpdatedTimeAgoText()}`
 }
 
 const validJobList = computed<Job[]>(() => {
@@ -92,7 +92,7 @@ const activateFilter = (name: string) => {
 }
 
 const getUpdatedTimeAgoText = () => {
-  return jobsLastUpdated.value ? formatDistanceToNow(jobsLastUpdated.value) + ' ago' : ''
+  return jobsLastUpdatedDate.value ? formatDistanceToNow(jobsLastUpdatedDate.value) + ' ago' : ''
 }
 
 const refreshData = async () => {
@@ -103,7 +103,7 @@ onMounted(async () => {
   await fetchJobs()
 
   window.setInterval(() => {
-    updatedTimeAgoText.value = getUpdatedTimeAgoText()
+    jobsLastUpdatedText.value = `Jobs fetch ${getUpdatedTimeAgoText()}`
   }, 1000)
 })
 </script>
@@ -117,7 +117,7 @@ onMounted(async () => {
     <main class="flex flex-col relative mx-auto w-full">
       <div class="toolbar sticky top-0 py-2">
         <div class="flex justify-center items-center gap-2 mb-4">
-          <p v-if="updatedTimeAgoText" class="mb-0">Jobs fetched {{ updatedTimeAgoText }}</p>
+          <h6 class="mb-0">{{ jobsLastUpdatedText }}</h6>
 
           <RefreshButton class="mb-0" :is-loading="isLoading" @click="refreshData" />
         </div>
@@ -131,7 +131,6 @@ onMounted(async () => {
 
       <div class="flex min-h-[80vh] overflow-y-auto">
         <BaseSpinner v-if="isLoading" class="mx-auto self-center w-12 h-12" />
-        <JobList v-else :jobs="filteredJobList" class="mx-auto" />
         <JobList v-else :jobs="filteredJobList" class="mx-auto" />
       </div>
     </main>
