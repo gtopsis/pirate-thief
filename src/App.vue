@@ -14,7 +14,8 @@ const jobsLastUpdatedText = ref('Jobs has not been fetched yet')
 
 const spreadsheetId = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID
 const apiKey = import.meta.env.VITE_GOOGLE_SPREADSHEET_API_KEY
-const jobsListSourceUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1?key=${apiKey}`
+const range = import.meta.env.VITE_GOOGLE_SPREADSHEET_API_RANGE
+const jobsListSourceUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`
 
 const { isLoading, error, data, fetchData } = useFetch<SpreadSheetResponse>(jobsListSourceUrl)
 async function fetchJobs() {
