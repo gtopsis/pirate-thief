@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-const sourceUrl =
-  'https://docs.google.com/spreadsheets/d/1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ/edit?gid=0#gid=0'
+import { jobsListSourceUrl } from '@/utils'
 </script>
 
 <template>
@@ -12,7 +11,7 @@ const sourceUrl =
     <h2 class="subtitle">
       A simple job listing app to showcase the public Jobs list by
       <a
-        :href="sourceUrl"
+        :href="jobsListSourceUrl"
         target="_blank"
         rel="noopener noreferrer"
         class="jobs-source-url font-weight-800"
