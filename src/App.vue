@@ -135,6 +135,10 @@ onUnmounted(() => {
 
       <div class="flex min-h-[80vh] overflow-y-auto">
         <BaseSpinner v-if="isLoading" class="mx-auto self-center" size="lg" />
+        <p v-else-if="error" class="text-center my-4 w-full">
+          <span>Fetching jobs failed. Please try again later.</span>
+        </p>
+
         <JobList v-else :jobs="filteredJobList" class="mx-auto" />
       </div>
     </main>
