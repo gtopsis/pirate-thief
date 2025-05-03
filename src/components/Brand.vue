@@ -10,7 +10,7 @@ import { jobsListSourceUrl } from '@/utils'
       Pirate Thief
     </h1>
 
-    <h2 class="subtitle text-xl md:text-2xl">
+    <h2 class="subtitle text-md md:text-2xl">
       A simple job listing app to showcase the public Jobs list by
       <a
         :href="jobsListSourceUrl"

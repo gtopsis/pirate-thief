@@ -11,7 +11,7 @@ const emits = defineEmits<{
 
 <template>
   <div
-    class="filter relative grid select-none items-center whitespace-nowrap rounded-lg py-1.5 px-3 text-xs font-bold uppercase shadow-sm ring-1 ring-inset ring-gray-500/10 my-1"
+    class="filter relative grid select-none items-center whitespace-nowrap rounded-lg py-1.5 px-3 text-xs font-bold uppercase shadow-xs ring-1 ring-inset ring-gray-500/10 my-1"
     :class="{ 'filter--active': active }"
     data-dismissible="chip"
     @click="emits('click')"

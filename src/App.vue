@@ -111,16 +111,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="w-full">
+  <div class="w-full flex flex-col items-center">
     <header
-      class="mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center max-w-[1024px] bg-[--color-bg]"
+      class="w-full mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center max-w-[1024px] bg-(--color-bg)"
     >
       <Brand />
     </header>
 
-    <main class="flex flex-col relative mx-auto w-full max-w-[1024px] bg-[--color-bg]">
-      <div class="toolbar sticky top-0 py-2 bg-[--color-bg]">
-        <div class="flex justify-center items-center gap-2 mb-4">
+    <main class="flex flex-col relative mx-auto w-full max-w-[1024px] bg-(--color-bg)">
+      <div class="toolbar sticky top-0 py-2 bg-(--color-bg)">
+        <div class="flex justify-center items-center gap-2 mb-2">
           <h6 class="mb-0">{{ jobsLastUpdatedText }}</h6>
 
           <RefreshButton class="mb-0" :is-loading="isLoading" @click="refreshData" />
@@ -133,7 +133,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="flex min-h-[80vh] overflow-y-auto">
+      <div class="flex justify-center min-h-[80vh] overflow-y-auto">
         <BaseSpinner v-if="isLoading" class="mx-auto self-center" size="lg" />
         <p v-else-if="error" class="text-center my-4 w-full">
           <span>Fetching jobs failed. Please try again later.</span>
