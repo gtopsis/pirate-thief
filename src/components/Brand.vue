@@ -4,11 +4,13 @@ import { jobsListSourceUrl } from '@/utils'
 
 <template>
   <div class="text-center">
-    <h1 class="title static block font-sans font-bold leading-snug antialiased mb-2">
+    <h1
+      class="title static block font-sans font-bold leading-snug antialiased mb-2 text-3xl md:text-[3.5rem]"
+    >
       Pirate Thief
     </h1>
 
-    <h2 class="subtitle">
+    <h2 class="subtitle text-xl md:text-2xl">
       A simple job listing app to showcase the public Jobs list by
       <a
         :href="jobsListSourceUrl"
@@ -26,21 +28,6 @@ import { jobsListSourceUrl } from '@/utils'
 .title {
   color: var(--color-text-1);
   font-family: 'Roboto';
-  font-size: 2.5rem;
-}
-
-.subtitle {
-  font-size: 1.15rem;
-}
-
-@media only screen and (min-width: 700px) {
-  .title {
-    font-size: 3.15rem;
-  }
-
-  .subtitle {
-    font-size: 1.25rem;
-  }
 }
 
 .jobs-source-url {
