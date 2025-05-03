@@ -114,14 +114,14 @@ onMounted(async () => {
     </header>
 
     <main class="flex flex-col relative mx-auto w-full max-w-[1024px] bg-[--color-bg]">
-      <div class="toolbar sticky top-0 py-2">
+      <div class="toolbar sticky top-0 py-2 bg-[--color-bg]">
         <div class="flex justify-center items-center gap-2 mb-4">
           <h6 class="mb-0">{{ jobsLastUpdatedText }}</h6>
 
           <RefreshButton class="mb-0" :is-loading="isLoading" @click="refreshData" />
         </div>
 
-        <FilterList :filters="filters" @filter:click="activateFilter" />
+        <FilterList :filters="filters" @filter:click="activateFilter" class="" />
 
         <div class="w-full text-center mt-4">
           <span class="">{{ filteredJobList.length }} jobs</span>
