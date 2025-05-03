@@ -6,19 +6,17 @@ const props = defineProps<{
   location: string
   company: string
 }>()
-
-const visitJobPage = () => {
-  window.open(props.url, '_blank')
-}
 </script>
 
 <template>
   <div
-    class="job flex flex-col justify-between py-2 px-4 shadow-md hover:cursor-pointer rounded min-h-20"
-    @click="visitJobPage"
+    class="job flex flex-col justify-between py-2 px-4 shadow-md rounded min-h-20 w-full bg-[--color-bg-mute]"
   >
-    <header>
-      <a class="job__title text-xl font-bold leading-relaxed tracking-normal antialiased">
+    <header class="text-left">
+      <a
+        class="job__title text-xl font-bold leading-relaxed tracking-normal antialiased"
+        :href="url"
+      >
         {{ title }}
       </a>
     </header>
@@ -39,10 +37,6 @@ const visitJobPage = () => {
 </template>
 
 <style scoped>
-.job {
-  background-color: var(--color-bg-mute);
-}
-
 .job__title {
   color: var(--vt-c-blue-dark);
 }
