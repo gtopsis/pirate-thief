@@ -3,8 +3,9 @@ export type IconSize = 'sm' | 'md' | 'lg'
 
 interface Props {
   size?: IconSize
+  color?: string
 }
-withDefaults(defineProps<Props>(), { size: 'md' })
+withDefaults(defineProps<Props>(), { size: 'md', color: 'currentColor' })
 
 const sizeInPixels = {
   sm: 16,
@@ -14,7 +15,7 @@ const sizeInPixels = {
 </script>
 
 <template>
-  <slot :sizeInPixels="sizeInPixels[size]"></slot>
+  <slot :sizeInPixels="sizeInPixels[size]" :color="color" />
 </template>
 
 <style lang="css" scoped></style>

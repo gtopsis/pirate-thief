@@ -3,16 +3,17 @@ import Icon, { type IconSize } from '@/components/icons/Icon.vue'
 
 interface Props {
   size?: IconSize
+  color?: string
 }
 withDefaults(defineProps<Props>(), { size: 'md' })
 </script>
 
 <template>
-  <Icon :size="size" v-slot="{ sizeInPixels }">
+  <Icon :size="size" :color="color" v-slot="{ sizeInPixels, color }">
     <svg
       :width="sizeInPixels"
       :height="sizeInPixels"
-      fill="currentColor"
+      :fill="color"
       version="1.1"
       id="refreshIcon"
       xmlns="http://www.w3.org/2000/svg"

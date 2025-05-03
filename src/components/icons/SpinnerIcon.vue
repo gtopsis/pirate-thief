@@ -3,18 +3,19 @@ import Icon, { type IconSize } from '@/components/icons/Icon.vue'
 
 interface Props {
   size?: IconSize
+  color?: string
 }
-withDefaults(defineProps<Props>(), { size: 'md' })
+withDefaults(defineProps<Props>(), { size: 'md', color: '#2563eb' })
 </script>
 
 <template>
-  <Icon :size="size" v-slot="{ sizeInPixels }">
+  <Icon :size="size" :color="color" v-slot="{ sizeInPixels, color }">
     <svg
+      class="text-gray-200 animate-spin dark:text-gray-600"
       :width="sizeInPixels"
       :height="sizeInPixels"
-      fill="currentColor"
+      :fill="color"
       aria-hidden="true"
-      class="spinner text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
       viewBox="0 0 100 101"
       xmlns="http://www.w3.org/2000/svg"
     >
