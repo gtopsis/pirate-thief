@@ -31,9 +31,6 @@ const refreshData = () => {
 <style lang="css" scoped>
 #refreshIcon {
   fill: var(--vt-c-blue-dark);
-
-  width: 0.8rem;
-  height: 0.8rem;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -107,11 +107,13 @@ onMounted(async () => {
 
 <template>
   <div class="w-full">
-    <header class="mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center">
+    <header
+      class="mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center max-w-[1024px] bg-[--color-bg]"
+    >
       <Brand />
     </header>
 
-    <main class="flex flex-col relative mx-auto w-full">
+    <main class="flex flex-col relative mx-auto w-full max-w-[1024px] bg-[--color-bg]">
       <div class="toolbar sticky top-0 py-2">
         <div class="flex justify-center items-center gap-2 mb-4">
           <h6 class="mb-0">{{ jobsLastUpdatedText }}</h6>
@@ -127,24 +129,11 @@ onMounted(async () => {
       </div>
 
       <div class="flex min-h-[80vh] overflow-y-auto">
-        <BaseSpinner v-if="isLoading" class="mx-auto self-center w-12 h-12" />
+        <BaseSpinner v-if="isLoading" class="mx-auto self-center" size="lg" />
         <JobList v-else :jobs="filteredJobList" class="mx-auto" />
       </div>
     </main>
   </div>
 </template>
 
-<style scoped>
-header {
-  background-color: var(--color-bg);
-}
-
-header,
-main {
-  max-width: 1024px;
-}
-
-.toolbar {
-  background-color: var(--color-bg);
-}
-</style>
+<style scoped></style>

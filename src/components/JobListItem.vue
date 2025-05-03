@@ -14,7 +14,7 @@ const visitJobPage = () => {
 
 <template>
   <div
-    class="job flex flex-col justify-between py-2 px-4 shadow-md hover:cursor-pointer rounded"
+    class="job flex flex-col justify-between py-2 px-4 shadow-md hover:cursor-pointer rounded min-h-20"
     @click="visitJobPage"
   >
     <header>
@@ -41,7 +41,6 @@ const visitJobPage = () => {
 <style scoped>
 .job {
   background-color: var(--color-bg-mute);
-  min-height: 75px;
 }
 
 .job__title {
