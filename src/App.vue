@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch, onUnmounted } from 'vue'
 import JobList from './components/JobList.vue'
 import FilterList from './components/FilterList.vue'
 import BaseSpinner from './components/BaseSpinner.vue'
@@ -96,12 +96,17 @@ const refreshData = async () => {
   await fetchJobs()
 }
 
+let interval: number
 onMounted(async () => {
   await fetchJobs()
 
-  window.setInterval(() => {
+  interval = window.setInterval(() => {
     jobsLastUpdatedText.value = `Jobs fetch ${getUpdatedTimeAgoText()}`
   }, 1000)
+})
+
+onUnmounted(() => {
+  clearInterval(interval)
 })
 </script>
 
