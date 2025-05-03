@@ -4,7 +4,7 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.vue'
 
 <template>
   <div role="status">
-    <SpinnerIcon />
+    <SpinnerIcon size="lg" />
     <span class="sr-only">Loading...</span>
   </div>
 </template>

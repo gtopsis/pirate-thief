@@ -25,7 +25,7 @@ const refreshData = () => {
     :title="isTemporaryNotAvailable ? 'Loading...' : 'Refetch Jobs'"
     @click="refreshData"
   >
-    <RefreshIcon />
+    <RefreshIcon size="sm" />
   </button>
 
   <!-- <button
