@@ -1,71 +1,85 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch, onUnmounted } from 'vue'
-import JobList from './components/JobList.vue'
-import FilterList from './components/FilterList.vue'
-import BaseSpinner from './components/BaseSpinner.vue'
-import RefreshButton from './components/RefreshButton.vue'
-import Brand from './components/Brand.vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { formatDistanceToNow } from 'date-fns'
-import type { Job, SpreadSheetResponse } from './types/types'
+import BaseSpinner from './components/BaseSpinner.vue'
+import Brand from './components/Brand.vue'
+import FilterList from './components/FilterList.vue'
+import JobList from './components/JobList.vue'
+import RefreshButton from './components/RefreshButton.vue'
 import { useFetch } from './composables/fetch'
 import { jobsListSourceUrl } from './utils'
+import type { Job, SpreadSheetResponse } from './types/types'
 
-const jobsLastUpdatedDate = ref<string | null>(null)
-const jobsLastUpdatedText = ref('Jobs has not been fetched yet')
+const NUMBER_OF_HEADER_ROWS = 5
+const NUMBER_OF_JOB_DETAILS = 5
+const UPDATE_INTERVAL_MS = 1000
 
+// === Jobs Data ===
 const { isLoading, error, data, fetchData } = useFetch<SpreadSheetResponse>(jobsListSourceUrl)
-async function fetchJobs() {
+
+const validJobList = computed<Job[]>(() => {
+  const validJobs = data.value?.values
+    ?.slice(NUMBER_OF_HEADER_ROWS)
+    .filter((item: string[]) => item.length === NUMBER_OF_JOB_DETAILS) as Job[]
+
+  return validJobs ?? []
+})
+
+const fetchJobs = async (): Promise<void> => {
   await fetchData()
+
   if (error.value) {
     console.error(error.value)
-
     return
   }
 
   jobsLastUpdatedDate.value = new Date().toLocaleString()
-  jobsLastUpdatedText.value = `Jobs fetch ${getUpdatedTimeAgoText()}`
+  jobsLastUpdatedText.value = `Jobs fetched ${getUpdatedTimeAgoText()}`
 }
 
-const validJobList = computed<Job[]>(() => {
-  const numberOfHeadersRows = 5
-  const numberOfJobDetails = 5
+const handleRefresh = async (): Promise<void> => {
+  await fetchJobs()
+}
 
-  const validJobs = data.value?.values
-    ?.slice(numberOfHeadersRows)
-    .filter((item: string[]) => item.length === numberOfJobDetails) as Job[]
+// === Filters ===
+const filters = ref(new Map<string, boolean>())
 
-  return validJobs || []
+const hasActiveFilters = computed(() => {
+  return Array.from(filters.value.values()).includes(true)
 })
 
-const filters = ref(new Map<string, boolean>())
 const filteredJobList = computed<Job[]>(() => {
-  if (
-    filters.value.size === 0 ||
-    validJobList.value.length === 0 ||
-    !Array.from(filters.value.values()).includes(true)
-  ) {
+  if (filters.value.size === 0 || validJobList.value.length === 0 || !hasActiveFilters.value) {
     return validJobList.value
   }
 
   return validJobList.value.filter((job: Job) => {
     const jobTechArea = job[3]
-
     return filters.value.get(jobTechArea) === true
   })
 })
 
-const initFilters = () => {
-  const _filters = new Map<string, boolean>()
+const initFilters = (): void => {
+  const newFilters = new Map<string, boolean>()
 
   validJobList.value.forEach((job: Job) => {
     const jobTechArea = job[3]
 
-    if (jobTechArea && !_filters.has(jobTechArea)) {
-      _filters.set(jobTechArea, false)
+    if (jobTechArea && !newFilters.has(jobTechArea)) {
+      newFilters.set(jobTechArea, false)
     }
   })
 
-  filters.value = _filters
+  filters.value = newFilters
+}
+
+const toggleFilter = (name: string): void => {
+  if (!filters.value.has(name)) {
+    return
+  }
+
+  filters.value.set(name, !filters.value.get(name))
+  filters.value = new Map(filters.value)
 }
 
 watch(
@@ -73,40 +87,31 @@ watch(
   () => {
     initFilters()
   },
-  { deep: true, immediate: true }
+  { deep: true, immediate: true },
 )
 
-const activateFilter = (name: string) => {
-  if (!filters.value.has(name)) {
-    return
-  }
+// === Last Updated Display ===
+const jobsLastUpdatedDate = ref<string | null>(null)
+const jobsLastUpdatedText = ref('Jobs has not been fetched yet')
+let updateInterval: number | undefined
 
-  filters.value.set(name, !filters.value.get(name))
-  const currentFilters = filters.value
-
-  filters.value = new Map()
-  filters.value = currentFilters
+const getUpdatedTimeAgoText = (): string => {
+  return jobsLastUpdatedDate.value ? `${formatDistanceToNow(jobsLastUpdatedDate.value)} ago` : ''
 }
 
-const getUpdatedTimeAgoText = () => {
-  return jobsLastUpdatedDate.value ? formatDistanceToNow(jobsLastUpdatedDate.value) + ' ago' : ''
-}
-
-const refreshData = async () => {
-  await fetchJobs()
-}
-
-let interval: number
+// === Lifecycle ===
 onMounted(async () => {
   await fetchJobs()
 
-  interval = window.setInterval(() => {
-    jobsLastUpdatedText.value = `Jobs fetch ${getUpdatedTimeAgoText()}`
-  }, 1000)
+  updateInterval = window.setInterval(() => {
+    jobsLastUpdatedText.value = `Jobs fetched ${getUpdatedTimeAgoText()}`
+  }, UPDATE_INTERVAL_MS)
 })
 
 onUnmounted(() => {
-  clearInterval(interval)
+  if (updateInterval) {
+    clearInterval(updateInterval)
+  }
 })
 </script>
 
@@ -123,10 +128,10 @@ onUnmounted(() => {
         <div class="flex justify-center items-center gap-2 mb-2">
           <h6 class="mb-0">{{ jobsLastUpdatedText }}</h6>
 
-          <RefreshButton class="mb-0" :is-loading="isLoading" @click="refreshData" />
+          <RefreshButton class="mb-0" :is-loading="isLoading" @click="handleRefresh" />
         </div>
 
-        <FilterList :filters="filters" @filter:click="activateFilter" class="" />
+        <FilterList :filters="filters" class="" @filter:click="toggleFilter" />
 
         <div class="w-full text-center mt-4">
           <span class="">{{ filteredJobList.length }} jobs</span>
