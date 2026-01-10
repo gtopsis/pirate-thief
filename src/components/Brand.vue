@@ -1,44 +1,27 @@
 <script lang="ts" setup>
-import { jobsListSourceUrl } from '@/utils'
+import { jobsListUrl } from '@/utils'
+
+const APP_NAME = 'Pirate Thief'
+const APP_DESCRIPTION = 'A simple job listing app to showcase the public Jobs list by'
+const SOURCE_NAME = 'Startup Pirate'
 </script>
 
 <template>
   <div class="text-center">
-    <h1
-      class="title static block font-sans font-bold leading-snug antialiased mb-2 text-3xl md:text-[3.5rem]"
-    >
-      Pirate Thief
+    <h1 class="font-sans font-bold leading-snug antialiased mb-2 text-3xl text-(--color-text-1) md:text-6xl">
+      {{ APP_NAME }}
     </h1>
 
-    <h2 class="subtitle text-md md:text-2xl">
-      A simple job listing app to showcase the public Jobs list by
+    <h2 class="text-md md:text-2xl">
+      {{ APP_DESCRIPTION }}
       <a
-        :href="jobsListSourceUrl"
+        :href="jobsListUrl"
         target="_blank"
         rel="noopener noreferrer"
-        class="jobs-source-url font-weight-800"
+        class="font-extrabold text-(--vt-c-red-dark) underline decoration-(--vt-c-red-dark) dark:text-(--vt-c-red-light) dark:decoration-(--vt-c-red-light)"
       >
-        <span>Startup Pirate</span>
+        {{ SOURCE_NAME }}
       </a>
     </h2>
   </div>
 </template>
-
-<style lang="css" scoped>
-.title {
-  color: var(--color-text-1);
-  font-family: 'Roboto';
-}
-
-.jobs-source-url {
-  color: var(--vt-c-red-dark);
-  text-decoration-color: var(--vt-c-red-dark);
-}
-
-@media (prefers-color-scheme: dark) {
-  .jobs-source-url {
-    color: var(--vt-c-red-light);
-    text-decoration-color: var(--vt-c-red-light);
-  }
-}
-</style>
