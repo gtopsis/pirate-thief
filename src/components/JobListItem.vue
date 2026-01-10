@@ -18,6 +18,7 @@ defineProps<{
         rel="noopener noreferrer"
       >
         {{ title }}
+        <span class="sr-only">(opens in new tab)</span>
       </a>
     </header>
 

@@ -21,6 +21,7 @@ const SOURCE_NAME = 'Startup Pirate'
         class="font-extrabold text-(--vt-c-red-dark) underline decoration-(--vt-c-red-dark) dark:text-(--vt-c-red-light) dark:decoration-(--vt-c-red-light)"
       >
         {{ SOURCE_NAME }}
+        <span class="sr-only">(opens in new tab)</span>
       </a>
     </h2>
   </div>

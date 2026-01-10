@@ -12,7 +12,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <ul class="w-full h-full flex gap-2 flex-wrap justify-center">
+  <ul role="group" aria-label="Filter jobs by tech area" class="w-full h-full flex gap-2 flex-wrap justify-center">
     <li v-for="[name, isEnabled] in filters" :key="name">
       <FilterListItem
         :name="name"
