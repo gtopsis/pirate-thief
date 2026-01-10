@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { formatDistanceToNow } from 'date-fns'
-import Brand from '@/components/Brand.vue'
+import AppHero from '@/components/AppHero.vue'
 import FilterList from '@/components/FilterList.vue'
 import JobList from '@/components/JobList.vue'
 import JobListSkeleton from '@/components/JobListSkeleton.vue'
@@ -139,7 +139,7 @@ onUnmounted(() => {
 
 <template>
   <header class="w-full mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center max-w-5xl bg-(--color-bg)">
-    <Brand />
+    <AppHero />
   </header>
 
   <main class="flex flex-col relative mx-auto w-full max-w-5xl bg-(--color-bg)">
