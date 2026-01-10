@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { formatDistanceToNow } from 'date-fns'
-import BaseSpinner from '@/components/BaseSpinner.vue'
 import Brand from '@/components/Brand.vue'
 import FilterList from '@/components/FilterList.vue'
 import JobList from '@/components/JobList.vue'
+import JobListSkeleton from '@/components/JobListSkeleton.vue'
 import RefreshButton from '@/components/RefreshButton.vue'
 import { useFetch } from '@/composables/useFetch'
 import { jobsListApiUrl } from '@/utils'
@@ -108,10 +108,20 @@ onUnmounted(() => {
     </div>
 
     <div class="flex justify-center min-h-[80vh] overflow-y-auto">
-      <BaseSpinner v-if="isLoading" class="mx-auto self-center" size="lg" />
+      <JobListSkeleton v-if="isLoading" class="mx-auto" />
+      
       <p v-else-if="error" class="text-center my-4 w-full">
         Fetching jobs failed. Please try again later.
       </p>
+
+      <div v-else-if="filteredJobList.length === 0" class="text-center my-8 w-full">
+        <p class="text-lg text-gray-600 dark:text-gray-400 mb-2">
+          No jobs match your filters
+        </p>
+        <p class="text-sm text-gray-500 dark:text-gray-500">
+          Try selecting different tech areas or clear all filters
+        </p>
+      </div>
 
       <JobList v-else :jobs="filteredJobList" class="mx-auto" />
     </div>
