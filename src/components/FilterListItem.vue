@@ -2,6 +2,7 @@
 const props = defineProps<{
   name: string
   active: boolean
+  count: number
 }>()
 
 const emit = defineEmits<{
@@ -16,6 +17,6 @@ const emit = defineEmits<{
     :class="active ? 'bg-(--vt-c-blue-dark) text-white' : 'bg-(--vt-c-black-soft) text-white'"
     @click="emit('click')"
   >
-    {{ name }}
+    {{ name }} <span class="ml-1 opacity-75">({{ count }})</span>
   </button>
 </template>

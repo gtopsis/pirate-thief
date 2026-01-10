@@ -76,3 +76,19 @@ export const toggleFilterInMap = (
   newFilters.set(name, !current)
   return newFilters
 }
+
+/**
+ * Count jobs per tech area
+ */
+export const countJobsByTechArea = (jobs: Job[]): Map<string, number> => {
+  const counts = new Map<string, number>()
+
+  for (const job of jobs) {
+    const techArea = job[3]
+    if (techArea) {
+      counts.set(techArea, (counts.get(techArea) ?? 0) + 1)
+    }
+  }
+
+  return counts
+}

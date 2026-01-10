@@ -3,6 +3,7 @@ import FilterListItem from './FilterListItem.vue'
 
 const props = defineProps<{
   filters: Map<string, boolean>
+  jobCounts: Map<string, number>
 }>()
 
 const emit = defineEmits<{
@@ -13,7 +14,12 @@ const emit = defineEmits<{
 <template>
   <ul class="w-full h-full flex gap-2 flex-wrap justify-center">
     <li v-for="[name, isEnabled] in filters" :key="name">
-      <FilterListItem :name="name" :active="isEnabled" @click="emit('filter:click', name)" />
+      <FilterListItem
+        :name="name"
+        :active="isEnabled"
+        :count="jobCounts.get(name) ?? 0"
+        @click="emit('filter:click', name)"
+      />
     </li>
   </ul>
 </template>

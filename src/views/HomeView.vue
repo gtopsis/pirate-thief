@@ -16,12 +16,15 @@ import {
   filterJobs,
   buildFiltersFromJobs,
   toggleFilterInMap,
+  countJobsByTechArea,
 } from '@/utils/HomeView.utils'
 
 // === Jobs Data ===
 const { isLoading, error, data, fetchData } = useFetch<SpreadSheetResponse>(jobsListApiUrl)
 
 const validJobList = computed(() => parseJobs(data.value))
+
+const jobCounts = computed(() => countJobsByTechArea(validJobList.value))
 
 // === Filters ===
 const filters = shallowRef(new Map<string, boolean>())
@@ -91,7 +94,7 @@ onUnmounted(() => {
 <template>
   <div class="w-full flex flex-col items-center">
     <header
-      class="w-full mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center max-w-5xl bg-(--color-bg)"
+      class="w-full mx-auto pt-6 pb-3 sticky top-0 mb-43flex flex-col items-center max-w-5xl bg-(--color-bg)"
     >
       <Brand />
     </header>
@@ -104,11 +107,7 @@ onUnmounted(() => {
           <RefreshButton class="mb-0" :is-loading="isLoading" @click="handleRefresh" />
         </div>
 
-        <FilterList :filters="filters" @filter:click="toggleFilter" />
-
-        <div class="w-full text-center mt-4">
-          <span>{{ filteredJobList.length }} jobs</span>
-        </div>
+        <FilterList :filters="filters" :job-counts="jobCounts" @filter:click="toggleFilter" />
       </div>
 
       <div class="flex justify-center min-h-[80vh] overflow-y-auto">
