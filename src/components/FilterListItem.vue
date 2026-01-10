@@ -13,7 +13,9 @@ const emit = defineEmits<{
 <template>
   <button
     type="button"
-    class="grid select-none items-center whitespace-nowrap rounded-lg py-1.5 px-3 text-xs font-bold uppercase shadow-xs ring-1 ring-inset ring-gray-500/10 cursor-pointer transition-colors"
+    :disabled="count === 0"
+    :title="count === 0 ? `No jobs available for ${name}` : `Filter by ${name}`"
+    class="grid select-none items-center whitespace-nowrap rounded-lg py-1.5 px-3 text-xs font-bold uppercase shadow-xs ring-1 ring-inset ring-gray-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
     :class="active ? 'bg-(--vt-c-blue-dark) text-white' : 'bg-(--vt-c-black-soft) text-white'"
     @click="emit('click')"
   >
