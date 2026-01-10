@@ -49,14 +49,14 @@ watch(jobCount, initFilters, { immediate: true })
 
 // === Last Updated Display ===
 const jobsLastUpdatedDate = ref<Date | null>(null)
-const jobsLastUpdatedText = computed(() => {
-  if (!jobsLastUpdatedDate.value) {
-    return 'Jobs have not been fetched yet'
-  }
-  return `Jobs fetched ${formatDistanceToNow(jobsLastUpdatedDate.value)} ago`
-})
+const jobsLastUpdatedText = ref('Jobs have not been fetched yet')
 
-const timeUpdateTick = ref(0)
+const updateLastUpdatedText = (): void => {
+  if (jobsLastUpdatedDate.value) {
+    jobsLastUpdatedText.value = `Jobs fetched ${formatDistanceToNow(jobsLastUpdatedDate.value)} ago`
+  }
+}
+
 let updateInterval: number | undefined
 
 // === Data Fetching ===
@@ -69,7 +69,7 @@ const fetchJobs = async (): Promise<void> => {
   }
 
   jobsLastUpdatedDate.value = new Date()
-  timeUpdateTick.value++
+  updateLastUpdatedText()
 }
 
 const handleRefresh = (): Promise<void> => fetchJobs()
@@ -78,9 +78,7 @@ const handleRefresh = (): Promise<void> => fetchJobs()
 onMounted(async () => {
   await fetchJobs()
 
-  updateInterval = window.setInterval(() => {
-    timeUpdateTick.value++
-  }, UPDATE_INTERVAL_MS)
+  updateInterval = window.setInterval(updateLastUpdatedText, UPDATE_INTERVAL_MS)
 })
 
 onUnmounted(() => {
