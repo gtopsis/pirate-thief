@@ -12,14 +12,20 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <ul role="group" aria-label="Filter jobs by tech area" class="w-full h-full flex gap-2 flex-wrap justify-center">
-    <li v-for="[name, isEnabled] in filters" :key="name">
-      <FilterListItem
-        :name="name"
-        :active="isEnabled"
-        :count="jobCounts.get(name) ?? 0"
-        @click="emit('filter:click', name)"
-      />
-    </li>
-  </ul>
+  <div class="w-full overflow-x-auto md:overflow-visible pb-2 md:pb-0">
+    <ul
+      role="group"
+      aria-label="Filter jobs by tech area"
+      class="flex gap-2 w-max md:w-full md:flex-wrap md:justify-center"
+    >
+      <li v-for="[name, isEnabled] in filters" :key="name">
+        <FilterListItem
+          :name="name"
+          :active="isEnabled"
+          :count="jobCounts.get(name) ?? 0"
+          @click="emit('filter:click', name)"
+        />
+      </li>
+    </ul>
+  </div>
 </template>
