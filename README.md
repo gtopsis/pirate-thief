@@ -2,6 +2,8 @@
 
 ### Job listing app (source: [Startup Pirate](https://docs.google.com/spreadsheets/d/1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ/edit?gid=0#gid=0)).
 
+Pirate Thief is a small job listing app which "steals" the published job ads of the Startup Pirate (startuppirate.gr), and display them through an intuitive UI.
+
 It could be characterized as a scraper which parses an online and public google spreadsheed, aggregates and showcase the list of job ads in an intuitive way.
 
 ### [Demo](https://gtopsis.github.io/pirate-thief/)
