@@ -9,10 +9,10 @@ defineProps<{
 </script>
 
 <template>
-  <article class="flex flex-col justify-between py-2 px-4 shadow-md rounded min-h-20 w-full bg-(--color-bg-mute)">
+  <article class="flex flex-col justify-between py-2 px-3 shadow-md rounded min-h-20 w-full bg-(--color-bg-mute)">
     <header class="text-left">
       <a
-        class="text-xl font-bold leading-relaxed tracking-normal antialiased text-(--vt-c-blue-dark) dark:text-(--vt-c-blue-light)"
+        class="text-lg md:text-xl font-bold leading-relaxed tracking-normal antialiased text-(--vt-c-blue-dark) dark:text-(--vt-c-blue-light)"
         :href="url"
         target="_blank"
         rel="noopener noreferrer"

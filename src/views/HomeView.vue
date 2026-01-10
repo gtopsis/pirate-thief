@@ -100,7 +100,7 @@ onUnmounted(() => {
     </header>
 
     <main class="flex flex-col relative mx-auto w-full max-w-5xl bg-(--color-bg)">
-      <div class="toolbar sticky top-0 py-2 bg-(--color-bg)">
+      <div class="toolbar sticky top-0 py-2 mb-2 bg-(--color-bg)">
         <div class="flex justify-center items-center gap-2 mb-2">
           <p class="mb-0" aria-live="polite" aria-atomic="true">{{ jobsLastUpdatedText }}</p>
 

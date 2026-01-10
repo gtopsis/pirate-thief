@@ -16,7 +16,7 @@ const emit = defineEmits<{
     <ul
       role="group"
       aria-label="Filter jobs by tech area"
-      class="flex gap-2 w-max md:w-full md:flex-wrap md:justify-center"
+      class="flex gap-2 w-max md:w-full md:flex-wrap md:justify-center py-1 md:py-0"
     >
       <li v-for="[name, isEnabled] in filters" :key="name">
         <FilterListItem
