@@ -92,32 +92,28 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="w-full flex flex-col items-center">
-    <header
-      class="w-full mx-auto pt-6 pb-3 sticky top-0 mb-43flex flex-col items-center max-w-5xl bg-(--color-bg)"
-    >
-      <Brand />
-    </header>
+  <header class="w-full mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center max-w-5xl bg-(--color-bg)">
+    <Brand />
+  </header>
 
-    <main class="flex flex-col relative mx-auto w-full max-w-5xl bg-(--color-bg)">
-      <div class="toolbar sticky top-0 py-2 mb-2 bg-(--color-bg)">
-        <div class="flex justify-center items-center gap-2 mb-2">
-          <p class="mb-0" aria-live="polite" aria-atomic="true">{{ jobsLastUpdatedText }}</p>
+  <main class="flex flex-col relative mx-auto w-full max-w-5xl bg-(--color-bg)">
+    <div class="toolbar sticky top-0 py-2 mb-2 bg-(--color-bg)">
+      <div class="flex justify-center items-center gap-2 mb-2">
+        <p aria-live="polite" aria-atomic="true">{{ jobsLastUpdatedText }}</p>
 
-          <RefreshButton class="mb-0" :is-loading="isLoading" @click="handleRefresh" />
-        </div>
-
-        <FilterList :filters="filters" :job-counts="jobCounts" @filter:click="toggleFilter" />
+        <RefreshButton :is-loading="isLoading" @click="handleRefresh" />
       </div>
 
-      <div class="flex justify-center min-h-[80vh] overflow-y-auto">
-        <BaseSpinner v-if="isLoading" class="mx-auto self-center" size="lg" />
-        <p v-else-if="error" class="text-center my-4 w-full">
-          <span>Fetching jobs failed. Please try again later.</span>
-        </p>
+      <FilterList :filters="filters" :job-counts="jobCounts" @filter:click="toggleFilter" />
+    </div>
 
-        <JobList v-else :jobs="filteredJobList" class="mx-auto" />
-      </div>
-    </main>
-  </div>
+    <div class="flex justify-center min-h-[80vh] overflow-y-auto">
+      <BaseSpinner v-if="isLoading" class="mx-auto self-center" size="lg" />
+      <p v-else-if="error" class="text-center my-4 w-full">
+        Fetching jobs failed. Please try again later.
+      </p>
+
+      <JobList v-else :jobs="filteredJobList" class="mx-auto" />
+    </div>
+  </main>
 </template>
