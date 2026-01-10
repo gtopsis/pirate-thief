@@ -7,7 +7,7 @@ import FilterList from '@/components/FilterList.vue'
 import JobList from '@/components/JobList.vue'
 import RefreshButton from '@/components/RefreshButton.vue'
 import { useFetch } from '@/composables/useFetch'
-import { jobsListSourceUrl } from '@/utils'
+import { jobsListApiUrl } from '@/utils'
 import type { SpreadSheetResponse } from '@/types/types'
 import {
   UPDATE_INTERVAL_MS,
@@ -19,7 +19,7 @@ import {
 } from '@/utils/HomeView.utils'
 
 // === Jobs Data ===
-const { isLoading, error, data, fetchData } = useFetch<SpreadSheetResponse>(jobsListSourceUrl)
+const { isLoading, error, data, fetchData } = useFetch<SpreadSheetResponse>(jobsListApiUrl)
 
 const validJobList = computed(() => parseJobs(data.value))
 

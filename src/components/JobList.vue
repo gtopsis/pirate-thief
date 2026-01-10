@@ -8,7 +8,7 @@ defineProps<{
 </script>
 
 <template>
-  <ul class="w-full grid grid-cols-1 max-w-[700px]">
+  <ul class="w-full grid grid-cols-1 max-w-2xl">
     <li
       v-for="([company, title, location, techArea, url], index) in jobs"
       :key="index"
@@ -24,5 +24,3 @@ defineProps<{
     </li>
   </ul>
 </template>
-
-<style lang="css" scoped></style>

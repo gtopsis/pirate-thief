@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
 import RefreshIcon from '@/components/icons/RefreshIcon.vue'
 
 const props = defineProps<{
@@ -9,33 +8,16 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'click'): void
 }>()
-
-const isTemporaryNotAvailable = computed(() => props.isLoading)
-
-const refreshData = () => {
-  emit('click')
-}
 </script>
 
 <template>
   <button
-    :disabled="isTemporaryNotAvailable"
-    class="inline-flex items-center py-1.5 px-3 text-sm font-medium border-none"
-    :title="isTemporaryNotAvailable ? 'Loading...' : 'Refetch Jobs'"
-    @click="refreshData"
+    type="button"
+    :disabled="isLoading"
+    class="inline-flex items-center py-1.5 px-3 text-sm font-medium border-none cursor-pointer disabled:cursor-wait text-(--vt-c-blue-dark) dark:text-(--vt-c-blue-light)"
+    :title="isLoading ? 'Loading...' : 'Refetch Jobs'"
+    @click="emit('click')"
   >
-    <RefreshIcon size="sm" />
+    <RefreshIcon :class="{ 'animate-spin': isLoading }" size="sm" color="currentColor" />
   </button>
 </template>
-
-<style lang="css" scoped>
-#refreshIcon {
-  fill: var(--vt-c-blue-dark);
-}
-
-@media (prefers-color-scheme: dark) {
-  #refreshIcon {
-    fill: var(--vt-c-blue-light);
-  }
-}
-</style>

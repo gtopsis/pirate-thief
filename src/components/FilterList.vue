@@ -15,10 +15,8 @@ const filtersEntries = computed(() => props.filters.entries())
 
 <template>
   <ul class="w-full h-full flex gap-2 flex-wrap justify-center">
-    <li v-for="[name, isEnabled] in filtersEntries" :key="name" class="mx-1 last:ml-0">
+    <li v-for="[name, isEnabled] in filtersEntries" :key="name">
       <FilterListItem :name="name" :active="isEnabled" @click="emit('filter:click', name)" />
     </li>
   </ul>
 </template>
-
-<style lang="css" scoped></style>
