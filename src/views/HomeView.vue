@@ -8,77 +8,42 @@ import JobList from '@/components/JobList.vue'
 import RefreshButton from '@/components/RefreshButton.vue'
 import { useFetch } from '@/composables/useFetch'
 import { jobsListSourceUrl } from '@/utils'
-import type { Job, SpreadSheetResponse } from '@/types/types'
-
-const NUMBER_OF_HEADER_ROWS = 5
-const NUMBER_OF_JOB_DETAILS = 5
-const UPDATE_INTERVAL_MS = 60_000 // Update "time ago" text every minute (sufficient granularity)
+import type { SpreadSheetResponse } from '@/types/types'
+import {
+  UPDATE_INTERVAL_MS,
+  parseJobs,
+  buildActiveFilterSet,
+  filterJobs,
+  buildFiltersFromJobs,
+  toggleFilterInMap,
+} from '@/utils/HomeView.utils'
 
 // === Jobs Data ===
 const { isLoading, error, data, fetchData } = useFetch<SpreadSheetResponse>(jobsListSourceUrl)
 
-const validJobList = computed<Job[]>(() => {
-  const values = data.value?.values
-  if (!values) return []
-
-  const jobs: Job[] = []
-  for (let i = NUMBER_OF_HEADER_ROWS; i < values.length; i++) {
-    const row = values[i]
-    if (row && row.length === NUMBER_OF_JOB_DETAILS) {
-      jobs.push(row as Job)
-    }
-  }
-  return jobs
-})
+const validJobList = computed(() => parseJobs(data.value))
 
 // === Filters ===
-// Using shallowRef since we replace the entire Map on updates
 const filters = shallowRef(new Map<string, boolean>())
 
-const activeFilterSet = computed(() => {
-  const active = new Set<string>()
-  for (const [key, value] of filters.value) {
-    if (value) active.add(key)
-  }
-  return active
-})
+const activeFilterSet = computed(() => buildActiveFilterSet(filters.value))
 
 const hasActiveFilters = computed(() => activeFilterSet.value.size > 0)
 
-const filteredJobList = computed<Job[]>(() => {
-  if (!hasActiveFilters.value) {
-    return validJobList.value
-  }
-
-  const activeFilters = activeFilterSet.value
-  return validJobList.value.filter((job: Job) => activeFilters.has(job[3]))
-})
+const filteredJobList = computed(() =>
+  hasActiveFilters.value ? filterJobs(validJobList.value, activeFilterSet.value) : validJobList.value,
+)
 
 const initFilters = (): void => {
-  const existingFilters = filters.value
-  const newFilters = new Map<string, boolean>()
-
-  for (const job of validJobList.value) {
-    const jobTechArea = job[3]
-    if (jobTechArea && !newFilters.has(jobTechArea)) {
-      // Preserve existing filter state if available
-      newFilters.set(jobTechArea, existingFilters.get(jobTechArea) ?? false)
-    }
-  }
-
-  filters.value = newFilters
+  filters.value = buildFiltersFromJobs(validJobList.value, filters.value)
 }
 
 const toggleFilter = (name: string): void => {
-  const current = filters.value.get(name)
-  if (current === undefined) return
-
-  const newFilters = new Map(filters.value)
-  newFilters.set(name, !current)
-  filters.value = newFilters
+  const newFilters = toggleFilterInMap(filters.value, name)
+  if (newFilters) filters.value = newFilters
 }
 
-// Watch validJobList length to reinit filters only when job count changes
+// Watch job count to reinit filters only when necessary
 const jobCount = computed(() => validJobList.value.length)
 watch(jobCount, initFilters, { immediate: true })
 
@@ -91,7 +56,6 @@ const jobsLastUpdatedText = computed(() => {
   return `Jobs fetched ${formatDistanceToNow(jobsLastUpdatedDate.value)} ago`
 })
 
-// Force reactivity update for "time ago" text
 const timeUpdateTick = ref(0)
 let updateInterval: number | undefined
 
@@ -108,9 +72,7 @@ const fetchJobs = async (): Promise<void> => {
   timeUpdateTick.value++
 }
 
-const handleRefresh = async (): Promise<void> => {
-  await fetchJobs()
-}
+const handleRefresh = (): Promise<void> => fetchJobs()
 
 // === Lifecycle ===
 onMounted(async () => {
