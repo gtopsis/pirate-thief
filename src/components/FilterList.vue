@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import FilterListItem from './FilterListItem.vue'
 
-const props = defineProps<{
+defineProps<{
   filters: Map<string, boolean>
   jobCounts: Map<string, number>
 }>()

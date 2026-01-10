@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import RefreshIcon from '@/components/icons/RefreshIcon.vue'
 
-const props = defineProps<{
+defineProps<{
   isLoading: boolean
 }>()
 
