@@ -1,12 +1,13 @@
-import { type Ref, ref, toValue } from 'vue'
+import { type Ref, ref, shallowRef, toValue } from 'vue'
 
 export const useFetch = <T>(url: string | Ref<string>) => {
   const isLoading = ref(false)
-  const error: any = ref(null)
+  const error = shallowRef<Error | null>(null)
   const data: Ref<T | null> = ref(null)
 
   const fetchData = async () => {
     isLoading.value = true
+    error.value = null
 
     try {
       const response = await fetch(toValue(url))
@@ -17,7 +18,7 @@ export const useFetch = <T>(url: string | Ref<string>) => {
       data.value = await response.json()
     } catch (err) {
       console.error(err)
-      error.value = err
+      error.value = err instanceof Error ? err : new Error(String(err))
 
       data.value = null
     } finally {
