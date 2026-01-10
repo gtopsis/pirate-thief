@@ -17,6 +17,9 @@ import {
   buildFiltersFromJobs,
   toggleFilterInMap,
   countJobsByTechArea,
+  getFiltersFromUrl,
+  setFiltersInUrl,
+  applyUrlFiltersToMap,
 } from '@/utils/HomeView.utils'
 
 // === Jobs Data ===
@@ -38,12 +41,32 @@ const filteredJobList = computed(() =>
 )
 
 const initFilters = (): void => {
-  filters.value = buildFiltersFromJobs(validJobList.value, filters.value)
+  const baseFilters = buildFiltersFromJobs(validJobList.value, filters.value)
+  const urlFilters = getFiltersFromUrl()
+  
+  if (urlFilters.size > 0) {
+    filters.value = applyUrlFiltersToMap(baseFilters, urlFilters)
+  } else {
+    filters.value = baseFilters
+  }
 }
 
 const toggleFilter = (name: string): void => {
   const newFilters = toggleFilterInMap(filters.value, name)
-  if (newFilters) filters.value = newFilters
+  if (newFilters) {
+    filters.value = newFilters
+    // Sync to URL
+    setFiltersInUrl(buildActiveFilterSet(newFilters))
+  }
+}
+
+const clearAllFilters = (): void => {
+  const newFilters = new Map<string, boolean>()
+  for (const [key] of filters.value) {
+    newFilters.set(key, false)
+  }
+  filters.value = newFilters
+  setFiltersInUrl(new Set())
 }
 
 // Watch job count to reinit filters only when necessary
@@ -77,17 +100,40 @@ const fetchJobs = async (): Promise<void> => {
 
 const handleRefresh = (): Promise<void> => fetchJobs()
 
+// === Keyboard Navigation ===
+const handleKeydown = (event: KeyboardEvent): void => {
+  // Ignore if user is typing in an input
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+    return
+  }
+
+  switch (event.key.toLowerCase()) {
+    case 'r':
+      if (!isLoading.value) {
+        handleRefresh()
+      }
+      break
+    case 'escape':
+      if (hasActiveFilters.value) {
+        clearAllFilters()
+      }
+      break
+  }
+}
+
 // === Lifecycle ===
 onMounted(async () => {
   await fetchJobs()
 
   updateInterval = window.setInterval(updateLastUpdatedText, UPDATE_INTERVAL_MS)
+  window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   if (updateInterval) {
     clearInterval(updateInterval)
   }
+  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
@@ -118,9 +164,17 @@ onUnmounted(() => {
         <p class="text-lg text-gray-600 dark:text-gray-400 mb-2">
           No jobs match your filters
         </p>
-        <p class="text-sm text-gray-500 dark:text-gray-500">
+        <p class="text-sm text-gray-500 dark:text-gray-500 mb-4">
           Try selecting different tech areas or clear all filters
         </p>
+        <button
+          type="button"
+          class="px-4 py-2 text-sm font-medium rounded-lg bg-(--vt-c-blue-dark) text-white hover:opacity-90 transition-opacity cursor-pointer"
+          @click="clearAllFilters"
+        >
+          Clear all filters
+        </button>
+        <p class="text-xs text-gray-400 mt-2">or press <kbd class="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 font-mono">Esc</kbd></p>
       </div>
 
       <JobList v-else :jobs="filteredJobList" class="mx-auto" />

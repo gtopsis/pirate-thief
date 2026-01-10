@@ -92,3 +92,49 @@ export const countJobsByTechArea = (jobs: Job[]): Map<string, number> => {
 
   return counts
 }
+
+// === URL State ===
+const FILTER_PARAM = 'filters'
+
+/**
+ * Parse active filters from URL search params
+ */
+export const getFiltersFromUrl = (): Set<string> => {
+  const params = new URLSearchParams(window.location.search)
+  const filterParam = params.get(FILTER_PARAM)
+  
+  if (!filterParam) return new Set()
+  
+  return new Set(filterParam.split(',').map(f => decodeURIComponent(f.trim())).filter(Boolean))
+}
+
+/**
+ * Update URL with active filters (without page reload)
+ */
+export const setFiltersInUrl = (activeFilters: Set<string>): void => {
+  const url = new URL(window.location.href)
+  
+  if (activeFilters.size === 0) {
+    url.searchParams.delete(FILTER_PARAM)
+  } else {
+    url.searchParams.set(FILTER_PARAM, Array.from(activeFilters).map(f => encodeURIComponent(f)).join(','))
+  }
+  
+  window.history.replaceState({}, '', url.toString())
+}
+
+/**
+ * Apply URL filters to a filters Map
+ */
+export const applyUrlFiltersToMap = (
+  filters: Map<string, boolean>,
+  urlFilters: Set<string>,
+): Map<string, boolean> => {
+  const newFilters = new Map<string, boolean>()
+  
+  for (const [key] of filters) {
+    newFilters.set(key, urlFilters.has(key))
+  }
+  
+  return newFilters
+}
