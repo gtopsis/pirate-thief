@@ -5,6 +5,7 @@ import AppHero from '@/components/AppHero.vue'
 import FilterList from '@/components/FilterList.vue'
 import JobList from '@/components/JobList.vue'
 import JobListSkeleton from '@/components/JobListSkeleton.vue'
+import JobsMap from '@/components/JobsMap.vue'
 import RefreshButton from '@/components/RefreshButton.vue'
 import { useFetch } from '@/composables/useFetch'
 import { jobsListApiUrl } from '@/utils'
@@ -19,7 +20,7 @@ import {
   countJobsByTechArea,
   getFiltersFromUrl,
   setFiltersInUrl,
-  applyUrlFiltersToMap,
+  applyUrlFiltersToMap
 } from '@/utils/HomeView.utils'
 
 // === Jobs Data ===
@@ -37,13 +38,15 @@ const activeFilterSet = computed(() => buildActiveFilterSet(filters.value))
 const hasActiveFilters = computed(() => activeFilterSet.value.size > 0)
 
 const filteredJobList = computed(() =>
-  hasActiveFilters.value ? filterJobs(validJobList.value, activeFilterSet.value) : validJobList.value,
+  hasActiveFilters.value
+    ? filterJobs(validJobList.value, activeFilterSet.value)
+    : validJobList.value
 )
 
 const initFilters = (): void => {
   const baseFilters = buildFiltersFromJobs(validJobList.value, filters.value)
   const urlFilters = getFiltersFromUrl()
-  
+
   if (urlFilters.size > 0) {
     filters.value = applyUrlFiltersToMap(baseFilters, urlFilters)
   } else {
@@ -138,7 +141,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <header class="w-full mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center max-w-5xl bg-(--color-bg)">
+  <header
+    class="w-full mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center max-w-5xl bg-(--color-bg)"
+  >
     <AppHero />
   </header>
 
@@ -155,15 +160,13 @@ onUnmounted(() => {
 
     <div class="flex justify-center min-h-[80vh] overflow-y-auto">
       <JobListSkeleton v-if="isLoading" class="mx-auto" />
-      
+
       <p v-else-if="error" class="text-center my-4 w-full">
         Fetching jobs failed. Please try again later.
       </p>
 
       <div v-else-if="filteredJobList.length === 0" class="text-center my-8 w-full">
-        <p class="text-lg text-gray-600 dark:text-gray-400 mb-2">
-          No jobs match your filters
-        </p>
+        <p class="text-lg text-gray-600 dark:text-gray-400 mb-2">No jobs match your filters</p>
         <p class="text-sm text-gray-500 dark:text-gray-500 mb-4">
           Try selecting different tech areas or clear all filters
         </p>
@@ -174,10 +177,18 @@ onUnmounted(() => {
         >
           Clear all filters
         </button>
-        <p class="text-xs text-gray-400 mt-2">or press <kbd class="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 font-mono">Esc</kbd></p>
+        <p class="text-xs text-gray-400 mt-2">
+          or press
+          <kbd class="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 font-mono">Esc</kbd>
+        </p>
       </div>
 
-      <JobList v-else :jobs="filteredJobList" class="mx-auto" />
+      <div v-else class="flex gap-4 w-full h-[70vh]">
+        <JobList :jobs="filteredJobList" class="flex-1 overflow-y-auto" />
+        <div class="flex-1 min-w-0">
+          <JobsMap :jobs="filteredJobList" class="w-full h-full" />
+        </div>
+      </div>
     </div>
   </main>
 </template>
