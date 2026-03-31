@@ -158,7 +158,7 @@ onUnmounted(() => {
       <FilterList :filters="filters" :job-counts="jobCounts" @filter:click="toggleFilter" />
     </div>
 
-    <div class="flex justify-center min-h-[80vh] overflow-y-auto">
+    <div class="flex justify-center min-h-[80vh]">
       <JobListSkeleton v-if="isLoading" class="mx-auto" />
 
       <p v-else-if="error" class="text-center my-4 w-full">
@@ -183,9 +183,9 @@ onUnmounted(() => {
         </p>
       </div>
 
-      <div v-else class="flex gap-4 w-full h-[70vh]">
-        <JobList :jobs="filteredJobList" class="flex-1 overflow-y-auto" />
-        <div class="flex-1 min-w-0">
+      <div v-else class="flex flex-col md:flex-row gap-4 w-full">
+        <JobList :jobs="filteredJobList" class="flex-1 md:max-h-[70vh] overflow-y-auto" />
+        <div class="hidden md:block flex-1 min-w-0 h-[70vh] sticky top-[140px]">
           <JobsMap :jobs="filteredJobList" class="w-full h-full" />
         </div>
       </div>
