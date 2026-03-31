@@ -8,16 +8,66 @@ const props = defineProps<{
   jobs: Job[]
 }>()
 
+const GREEK_CITIES = [
+  'athens',
+  'thessaloniki',
+  'heraklion',
+  'patras',
+  'volos',
+  'ioannina',
+  'larissa',
+  'trikala',
+  'chalkida',
+  'samos',
+  'rhodes',
+  'crete',
+  'corfu',
+  'mykonos',
+  'santorini',
+  'kalamata',
+  'xanthi',
+  'alexandroupoli',
+  'kavala',
+  'serres',
+  'katerini',
+  'komotini',
+  'ag. paraskevi',
+  'ag-paraskevi',
+  'marousi',
+  'nea smyrni',
+  'pyrgos',
+  'kozani',
+  'karditsa',
+  'lamia',
+  'thiva',
+  'agrinio',
+  'piraeus',
+  'peristeri',
+  'ilion',
+  'metamorphosi',
+  'halandri',
+  'vouleftika',
+  'glyfada',
+  'irakleio',
+  'mesolongi',
+  'sparta',
+  'tripoli',
+  'nafplio'
+]
+
 const greeceCoords: Record<string, [number, number]> = {
   athens: [37.9838, 23.7275],
   thessaloniki: [40.6401, 22.9444],
   heraklion: [35.3617, 25.1648],
+  irakleion: [35.3617, 25.1648],
+  irakleio: [35.3617, 25.1648],
+  iraklion: [35.3617, 25.1648],
   patras: [38.2464, 21.7346],
   volos: [39.3611, 22.9422],
   ioannina: [39.665, 20.8537],
   larissa: [39.639, 22.4196],
   trikala: [39.5544, 21.7681],
-  ' Chalkida': [38.4636, 23.5872],
+  chalkida: [38.4636, 23.5872],
   samos: [37.7547, 26.9784],
   rhodes: [36.4349, 28.2176],
   crete: [35.2401, 24.8093],
@@ -31,41 +81,28 @@ const greeceCoords: Record<string, [number, number]> = {
   serres: [41.0859, 23.5473],
   katerini: [40.2697, 22.4992],
   komotini: [41.1223, 25.4062],
-  'ag-paraskevi': [38.0167, 23.8167],
-  'ag-paraskevh': [38.0167, 23.8167],
   'ag. paraskevi': [38.0167, 23.8167],
+  'ag-paraskevi': [38.0167, 23.8167],
   marousi: [38.0492, 23.8069],
-  'nea smyrnh': [37.9351, 23.6963],
   'nea smyrni': [37.9351, 23.6963],
   pyrgos: [37.6695, 21.4421],
   kozani: [40.3006, 21.7886],
   karditsa: [39.3647, 21.9215],
   lamia: [38.9, 22.4345],
   thiva: [38.324, 23.3177],
-  tierra: [38.324, 23.3177],
   agrinio: [38.6256, 21.4081],
-  alexoupoli: [40.9131, 25.8731],
   piraeus: [37.9475, 23.6426],
   peristeri: [38.0178, 23.6878],
   ilion: [38.0353, 23.6965],
-  illion: [38.0353, 23.6965],
   metamorphosi: [38.0633, 23.7581],
   halandri: [38.0161, 23.8042],
   vouleftika: [37.9165, 23.9485],
   glyfada: [37.8651, 23.7536],
-  palini: [37.9165, 23.9485],
-  palini: [37.8689, 23.7383],
   irakleio: [35.3387, 25.1442],
   mesolongi: [38.3686, 21.6631],
-  missolongi: [38.3686, 21.6631],
-  kalamata: [37.0367, 22.1142],
   sparta: [37.0758, 22.4306],
   tripoli: [37.5089, 22.3787],
-  argous: [37.6449, 22.7179],
-  nafplio: [37.5706, 22.8765],
-  epirus: [39.665, 20.8537],
-  greece: [39.0742, 21.8243],
-  remote: [39.0742, 21.8243]
+  nafplio: [37.5706, 22.8765]
 }
 
 const greeceCenter: [number, number] = [39.0742, 21.8243]
@@ -75,7 +112,16 @@ let markersLayer: L.LayerGroup | null = null
 
 const getCoords = (location: string): [number, number] | null => {
   const normalized = location.toLowerCase().trim()
-  return greeceCoords[normalized] || null
+
+  if (normalized === 'greece' || normalized === 'remote') return null
+
+  for (const city of GREEK_CITIES) {
+    if (normalized.includes(city)) {
+      return greeceCoords[city] || null
+    }
+  }
+
+  return null
 }
 
 const initMap = () => {
