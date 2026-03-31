@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch, watchEffect } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Job } from '@/types/types'
@@ -98,7 +98,6 @@ const greeceCoords: Record<string, [number, number]> = {
   halandri: [38.0161, 23.8042],
   vouleftika: [37.9165, 23.9485],
   glyfada: [37.8651, 23.7536],
-  irakleio: [35.3387, 25.1442],
   mesolongi: [38.3686, 21.6631],
   sparta: [37.0758, 22.4306],
   tripoli: [37.5089, 22.3787],
@@ -170,6 +169,7 @@ const updateMarkers = () => {
   for (const [, data] of coordsMap) {
     const jobCount = data.jobs.length
     const firstJob = data.jobs[0]
+    if (!firstJob) continue
 
     const icon = L.divIcon({
       className: 'custom-marker',
