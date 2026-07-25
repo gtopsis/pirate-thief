@@ -5,12 +5,19 @@ defineProps<{
   jobArea: string
   location: string
   company: string
+  highlighted?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'select'): void
 }>()
 </script>
 
 <template>
   <article
-    class="flex flex-col justify-between py-2 px-3 shadow-md rounded min-h-20 w-full bg-(--color-bg-mute)"
+    :data-highlighted="highlighted ? 'true' : undefined"
+    class="flex flex-col justify-between py-2 px-3 shadow-md rounded min-h-20 w-full bg-(--color-bg-mute) transition-shadow data-[highlighted]:ring-2 data-[highlighted]:ring-(--vt-c-blue-dark)"
+    @click="emit('select')"
   >
     <a
       class="text-lg md:text-xl font-bold leading-relaxed tracking-normal antialiased text-(--vt-c-blue-dark) dark:text-(--vt-c-blue-light)"

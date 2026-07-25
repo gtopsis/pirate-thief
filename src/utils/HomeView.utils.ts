@@ -44,11 +44,23 @@ export const filterJobs = (jobs: Job[], activeFilters: Set<string>): Job[] => {
 }
 
 /**
+ * Filter jobs by a free-text search query, matching company, title and location.
+ */
+export const searchJobs = (jobs: Job[], query: string): Job[] => {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return jobs
+
+  return jobs.filter(([company, title, location]) =>
+    [company, title, location].some((field) => field?.toLowerCase().includes(normalized))
+  )
+}
+
+/**
  * Build initial filters Map from jobs, preserving existing filter states
  */
 export const buildFiltersFromJobs = (
   jobs: Job[],
-  existingFilters: Map<string, boolean>,
+  existingFilters: Map<string, boolean>
 ): Map<string, boolean> => {
   const newFilters = new Map<string, boolean>()
 
@@ -67,7 +79,7 @@ export const buildFiltersFromJobs = (
  */
 export const toggleFilterInMap = (
   filters: Map<string, boolean>,
-  name: string,
+  name: string
 ): Map<string, boolean> | null => {
   const current = filters.get(name)
   if (current === undefined) return null
@@ -102,10 +114,15 @@ const FILTER_PARAM = 'filters'
 export const getFiltersFromUrl = (): Set<string> => {
   const params = new URLSearchParams(window.location.search)
   const filterParam = params.get(FILTER_PARAM)
-  
+
   if (!filterParam) return new Set()
-  
-  return new Set(filterParam.split(',').map(f => decodeURIComponent(f.trim())).filter(Boolean))
+
+  return new Set(
+    filterParam
+      .split(',')
+      .map((f) => decodeURIComponent(f.trim()))
+      .filter(Boolean)
+  )
 }
 
 /**
@@ -113,13 +130,18 @@ export const getFiltersFromUrl = (): Set<string> => {
  */
 export const setFiltersInUrl = (activeFilters: Set<string>): void => {
   const url = new URL(window.location.href)
-  
+
   if (activeFilters.size === 0) {
     url.searchParams.delete(FILTER_PARAM)
   } else {
-    url.searchParams.set(FILTER_PARAM, Array.from(activeFilters).map(f => encodeURIComponent(f)).join(','))
+    url.searchParams.set(
+      FILTER_PARAM,
+      Array.from(activeFilters)
+        .map((f) => encodeURIComponent(f))
+        .join(',')
+    )
   }
-  
+
   window.history.replaceState({}, '', url.toString())
 }
 
@@ -128,13 +150,13 @@ export const setFiltersInUrl = (activeFilters: Set<string>): void => {
  */
 export const applyUrlFiltersToMap = (
   filters: Map<string, boolean>,
-  urlFilters: Set<string>,
+  urlFilters: Set<string>
 ): Map<string, boolean> => {
   const newFilters = new Map<string, boolean>()
-  
+
   for (const [key] of filters) {
     newFilters.set(key, urlFilters.has(key))
   }
-  
+
   return newFilters
 }

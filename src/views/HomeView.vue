@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { formatDistanceToNow } from 'date-fns'
 import AppHero from '@/components/AppHero.vue'
-import FilterList from '@/components/FilterList.vue'
-import JobList from '@/components/JobList.vue'
-import JobListSkeleton from '@/components/JobListSkeleton.vue'
+import JobPanel from '@/components/JobPanel.vue'
 import JobsMap from '@/components/JobsMap.vue'
+import BottomSheet from '@/components/BottomSheet.vue'
 import RefreshButton from '@/components/RefreshButton.vue'
 import { useFetch } from '@/composables/useFetch'
 import { jobsListApiUrl } from '@/utils'
-import type { SpreadSheetResponse } from '@/types/types'
+import { filterJobsByBounds, getJobId } from '@/utils/geo'
+import type { MapBounds } from '@/utils/geo'
+import type { Job, SpreadSheetResponse } from '@/types/types'
 import {
   UPDATE_INTERVAL_MS,
   parseJobs,
   buildActiveFilterSet,
   filterJobs,
+  searchJobs,
   buildFiltersFromJobs,
   toggleFilterInMap,
   countJobsByTechArea,
@@ -30,18 +32,22 @@ const validJobList = computed(() => parseJobs(data.value))
 
 const jobCounts = computed(() => countJobsByTechArea(validJobList.value))
 
-// === Filters ===
+// === Filters & Search ===
 const filters = shallowRef(new Map<string, boolean>())
+const searchQuery = ref('')
 
 const activeFilterSet = computed(() => buildActiveFilterSet(filters.value))
 
 const hasActiveFilters = computed(() => activeFilterSet.value.size > 0)
 
-const filteredJobList = computed(() =>
-  hasActiveFilters.value
+// All jobs matching tech-area filters + search, independent of the map viewport.
+// This is what gets rendered as markers on the map.
+const filteredJobList = computed(() => {
+  const byTechArea = hasActiveFilters.value
     ? filterJobs(validJobList.value, activeFilterSet.value)
     : validJobList.value
-)
+  return searchJobs(byTechArea, searchQuery.value)
+})
 
 const initFilters = (): void => {
   const baseFilters = buildFiltersFromJobs(validJobList.value, filters.value)
@@ -58,7 +64,6 @@ const toggleFilter = (name: string): void => {
   const newFilters = toggleFilterInMap(filters.value, name)
   if (newFilters) {
     filters.value = newFilters
-    // Sync to URL
     setFiltersInUrl(buildActiveFilterSet(newFilters))
   }
 }
@@ -69,6 +74,7 @@ const clearAllFilters = (): void => {
     newFilters.set(key, false)
   }
   filters.value = newFilters
+  searchQuery.value = ''
   setFiltersInUrl(new Set())
 }
 
@@ -76,13 +82,67 @@ const clearAllFilters = (): void => {
 const jobCount = computed(() => validJobList.value.length)
 watch(jobCount, initFilters, { immediate: true })
 
+// === Map <-> List sync ===
+const mapBounds = shallowRef<MapBounds | null>(null)
+// Default to showing every matching job in the list regardless of the
+// current map viewport (safer default: doesn't depend on the map having
+// settled into a meaningful viewport yet, and avoids surprising users with
+// an empty list on load). Users can opt in to narrowing the list down to
+// only what's currently visible on the map.
+const showAllOnMap = ref(true)
+const activeJobId = ref<string | null>(null)
+const jobsMapRef = ref<InstanceType<typeof JobsMap> | null>(null)
+const bottomSheetRef = ref<InstanceType<typeof BottomSheet> | null>(null)
+
+const isViewportFilterAvailable = computed(() => mapBounds.value !== null)
+
+// Jobs shown in the list panel: narrowed down to the current map viewport,
+// unless the user opted to see all matching jobs regardless of pan/zoom.
+const panelJobList = computed(() =>
+  showAllOnMap.value
+    ? filteredJobList.value
+    : filterJobsByBounds(filteredJobList.value, mapBounds.value)
+)
+
+const handleBoundsChanged = (bounds: MapBounds): void => {
+  mapBounds.value = bounds
+}
+
+const handleJobHover = (jobId: string | null): void => {
+  activeJobId.value = jobId
+}
+
+const handleJobSelect = (jobId: string): void => {
+  activeJobId.value = jobId
+  jobsMapRef.value?.flyToJob(jobId)
+}
+
+const scrollJobIntoView = (jobId: string): void => {
+  nextTick(() => {
+    const escapedId = typeof CSS !== 'undefined' ? CSS.escape(jobId) : jobId
+    document
+      .querySelector(`[data-job-id="${escapedId}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+}
+
+const handleMarkerClick = (jobs: Job[]): void => {
+  const firstJob = jobs[0]
+  if (!firstJob) return
+
+  const jobId = getJobId(firstJob)
+  activeJobId.value = jobId
+  bottomSheetRef.value?.expand()
+  scrollJobIntoView(jobId)
+}
+
 // === Last Updated Display ===
 const jobsLastUpdatedDate = ref<Date | null>(null)
 const jobsLastUpdatedText = ref('Jobs have not been fetched yet')
 
 const updateLastUpdatedText = (): void => {
   if (jobsLastUpdatedDate.value) {
-    jobsLastUpdatedText.value = `Jobs fetched ${formatDistanceToNow(jobsLastUpdatedDate.value)} ago`
+    jobsLastUpdatedText.value = `Fetched ${formatDistanceToNow(jobsLastUpdatedDate.value)} ago`
   }
 }
 
@@ -117,7 +177,7 @@ const handleKeydown = (event: KeyboardEvent): void => {
       }
       break
     case 'escape':
-      if (hasActiveFilters.value) {
+      if (hasActiveFilters.value || searchQuery.value) {
         clearAllFilters()
       }
       break
@@ -141,54 +201,78 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <header
-    class="w-full mx-auto pt-6 pb-3 sticky top-0 mb-4 flex flex-col items-center max-w-5xl bg-(--color-bg)"
-  >
-    <AppHero />
-  </header>
+  <div class="app-shell h-[100dvh] w-full flex flex-col overflow-hidden bg-(--color-bg)">
+    <header
+      class="shrink-0 flex flex-col md:flex-row md:items-center md:justify-between gap-2 px-4 py-3 border-b border-(--color-divider)"
+    >
+      <AppHero compact />
 
-  <main class="flex flex-col relative mx-auto w-full max-w-5xl bg-(--color-bg)">
-    <div class="toolbar sticky top-0 py-2 mb-2 bg-(--color-bg)">
-      <div class="flex justify-center items-center gap-2 mb-2">
-        <p aria-live="polite" aria-atomic="true">{{ jobsLastUpdatedText }}</p>
-
+      <div class="flex justify-center md:justify-end items-center gap-2">
+        <p aria-live="polite" aria-atomic="true" class="text-xs text-(--color-text-3)">
+          {{ jobsLastUpdatedText }}
+        </p>
         <RefreshButton :is-loading="isLoading" @click="handleRefresh" />
       </div>
+    </header>
 
-      <FilterList :filters="filters" :job-counts="jobCounts" @filter:click="toggleFilter" />
-    </div>
+    <main class="flex-1 min-h-0 relative flex flex-col md:flex-row">
+      <!-- Desktop side panel -->
+      <aside
+        class="hidden md:flex md:flex-col md:w-[380px] lg:w-[420px] shrink-0 border-r border-(--color-divider) bg-(--color-bg)"
+      >
+        <JobPanel
+          :jobs="panelJobList"
+          :total-job-count="filteredJobList.length"
+          :is-loading="isLoading"
+          :error="!!error"
+          :filters="filters"
+          :job-counts="jobCounts"
+          :search-query="searchQuery"
+          :show-all-on-map="showAllOnMap"
+          :is-viewport-filter-available="isViewportFilterAvailable"
+          :highlighted-job-id="activeJobId"
+          @filter:click="toggleFilter"
+          @clear-filters="clearAllFilters"
+          @update:search-query="searchQuery = $event"
+          @update:show-all-on-map="showAllOnMap = $event"
+          @job:select="handleJobSelect"
+          @job:hover="handleJobHover"
+        />
+      </aside>
 
-    <div class="flex justify-center min-h-[80vh]">
-      <JobListSkeleton v-if="isLoading" class="mx-auto" />
+      <!-- Map fills the remaining space on every device -->
+      <div class="flex-1 min-w-0 relative">
+        <JobsMap
+          ref="jobsMapRef"
+          :jobs="filteredJobList"
+          :highlighted-job-id="activeJobId"
+          class="absolute inset-0"
+          @bounds-changed="handleBoundsChanged"
+          @marker-click="handleMarkerClick"
+        />
 
-      <p v-else-if="error" class="text-center my-4 w-full">
-        Fetching jobs failed. Please try again later.
-      </p>
-
-      <div v-else-if="filteredJobList.length === 0" class="text-center my-8 w-full">
-        <p class="text-lg text-gray-600 dark:text-gray-400 mb-2">No jobs match your filters</p>
-        <p class="text-sm text-gray-500 dark:text-gray-500 mb-4">
-          Try selecting different tech areas or clear all filters
-        </p>
-        <button
-          type="button"
-          class="px-4 py-2 text-sm font-medium rounded-lg bg-(--vt-c-blue-dark) text-white hover:opacity-90 transition-opacity cursor-pointer"
-          @click="clearAllFilters"
-        >
-          Clear all filters
-        </button>
-        <p class="text-xs text-gray-400 mt-2">
-          or press
-          <kbd class="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 font-mono">Esc</kbd>
-        </p>
+        <!-- Mobile bottom sheet mirrors the same panel -->
+        <BottomSheet ref="bottomSheetRef" :job-count="panelJobList.length">
+          <JobPanel
+            :jobs="panelJobList"
+            :total-job-count="filteredJobList.length"
+            :is-loading="isLoading"
+            :error="!!error"
+            :filters="filters"
+            :job-counts="jobCounts"
+            :search-query="searchQuery"
+            :show-all-on-map="showAllOnMap"
+            :is-viewport-filter-available="isViewportFilterAvailable"
+            :highlighted-job-id="activeJobId"
+            @filter:click="toggleFilter"
+            @clear-filters="clearAllFilters"
+            @update:search-query="searchQuery = $event"
+            @update:show-all-on-map="showAllOnMap = $event"
+            @job:select="handleJobSelect"
+            @job:hover="handleJobHover"
+          />
+        </BottomSheet>
       </div>
-
-      <div v-else class="flex flex-col md:flex-row gap-4 w-full">
-        <JobList :jobs="filteredJobList" class="flex-1 md:max-h-[70vh] overflow-y-auto" />
-        <div class="hidden md:block flex-1 min-w-0 h-[70vh] sticky top-[140px]">
-          <JobsMap :jobs="filteredJobList" class="w-full h-full" />
-        </div>
-      </div>
-    </div>
-  </main>
+    </main>
+  </div>
 </template>

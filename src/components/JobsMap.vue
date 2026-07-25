@@ -1,219 +1,239 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import 'leaflet.markercluster'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import type { Job } from '@/types/types'
+import { GREECE_CENTER, GREECE_DEFAULT_ZOOM, getJobCoords, getJobId } from '@/utils/geo'
+import type { MapBounds } from '@/utils/geo'
 
 const props = defineProps<{
-  jobs: Job[]
+  jobs: readonly Job[]
+  highlightedJobId?: string | null
 }>()
 
-const GREEK_CITIES = [
-  'athens',
-  'thessaloniki',
-  'heraklion',
-  'patras',
-  'volos',
-  'ioannina',
-  'larissa',
-  'trikala',
-  'chalkida',
-  'samos',
-  'rhodes',
-  'crete',
-  'corfu',
-  'mykonos',
-  'santorini',
-  'kalamata',
-  'xanthi',
-  'alexandroupoli',
-  'kavala',
-  'serres',
-  'katerini',
-  'komotini',
-  'ag. paraskevi',
-  'ag-paraskevi',
-  'marousi',
-  'nea smyrni',
-  'pyrgos',
-  'kozani',
-  'karditsa',
-  'lamia',
-  'thiva',
-  'agrinio',
-  'piraeus',
-  'peristeri',
-  'ilion',
-  'metamorphosi',
-  'halandri',
-  'vouleftika',
-  'glyfada',
-  'irakleio',
-  'mesolongi',
-  'sparta',
-  'tripoli',
-  'nafplio'
-]
+const emit = defineEmits<{
+  (e: 'bounds-changed', bounds: MapBounds): void
+  (e: 'marker-click', jobs: Job[]): void
+}>()
 
-const greeceCoords: Record<string, [number, number]> = {
-  athens: [37.9838, 23.7275],
-  thessaloniki: [40.6401, 22.9444],
-  heraklion: [35.3617, 25.1648],
-  irakleion: [35.3617, 25.1648],
-  irakleio: [35.3617, 25.1648],
-  iraklion: [35.3617, 25.1648],
-  patras: [38.2464, 21.7346],
-  volos: [39.3611, 22.9422],
-  ioannina: [39.665, 20.8537],
-  larissa: [39.639, 22.4196],
-  trikala: [39.5544, 21.7681],
-  chalkida: [38.4636, 23.5872],
-  samos: [37.7547, 26.9784],
-  rhodes: [36.4349, 28.2176],
-  crete: [35.2401, 24.8093],
-  corfu: [39.6249, 19.9214],
-  mykonos: [37.4467, 25.3289],
-  santorini: [36.3932, 25.4615],
-  kalamata: [37.0367, 22.1142],
-  xanthi: [41.1342, 24.8879],
-  alexandroupoli: [40.9131, 25.8731],
-  kavala: [40.9399, 24.4017],
-  serres: [41.0859, 23.5473],
-  katerini: [40.2697, 22.4992],
-  komotini: [41.1223, 25.4062],
-  'ag. paraskevi': [38.0167, 23.8167],
-  'ag-paraskevi': [38.0167, 23.8167],
-  marousi: [38.0492, 23.8069],
-  'nea smyrni': [37.9351, 23.6963],
-  pyrgos: [37.6695, 21.4421],
-  kozani: [40.3006, 21.7886],
-  karditsa: [39.3647, 21.9215],
-  lamia: [38.9, 22.4345],
-  thiva: [38.324, 23.3177],
-  agrinio: [38.6256, 21.4081],
-  piraeus: [37.9475, 23.6426],
-  peristeri: [38.0178, 23.6878],
-  ilion: [38.0353, 23.6965],
-  metamorphosi: [38.0633, 23.7581],
-  halandri: [38.0161, 23.8042],
-  vouleftika: [37.9165, 23.9485],
-  glyfada: [37.8651, 23.7536],
-  mesolongi: [38.3686, 21.6631],
-  sparta: [37.0758, 22.4306],
-  tripoli: [37.5089, 22.3787],
-  nafplio: [37.5706, 22.8765]
-}
-
-const greeceCenter: [number, number] = [39.0742, 21.8243]
+const LIGHT_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+const DARK_TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+const TILE_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
 let map: L.Map | null = null
-let markersLayer: L.LayerGroup | null = null
+let clusterGroup: L.MarkerClusterGroup | null = null
+let tileLayer: L.TileLayer | null = null
+let markersByJobId = new Map<string, L.Marker>()
+let resizeObserver: ResizeObserver | null = null
+const mapContainer = ref<HTMLDivElement | null>(null)
+const darkModeQuery =
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null
 
-const getCoords = (location: string): [number, number] | null => {
-  const normalized = location.toLowerCase().trim()
-
-  if (normalized === 'greece' || normalized === 'remote') return null
-
-  for (const city of GREEK_CITIES) {
-    if (normalized.includes(city)) {
-      return greeceCoords[city] || null
-    }
-  }
-
-  return null
+const clusterIconClass = (count: number): string => {
+  if (count >= 30) return 'marker-cluster-large'
+  if (count >= 10) return 'marker-cluster-medium'
+  return 'marker-cluster-small'
 }
 
-const initMap = () => {
+const createClusterIcon = (cluster: L.MarkerCluster): L.DivIcon => {
+  const count = cluster.getChildCount()
+  return L.divIcon({
+    html: `<div class="marker-cluster-inner ${clusterIconClass(count)}"><span>${count}</span></div>`,
+    className: 'marker-cluster-custom',
+    iconSize: L.point(40, 40)
+  })
+}
+
+const buildPopupContent = (jobs: Job[]): string => {
+  if (jobs.length === 1) {
+    const [company, title, location] = jobs[0]!
+    return `<strong>${title}</strong><br>${company}<br><em>${location}</em>`
+  }
+
+  const scrollable = jobs.length > 15 ? ' scrollable' : ''
+  const items = jobs.map(([company, title]) => `${company} - ${title}`).join('<br>')
+  return `<strong>${jobs.length} jobs</strong><div class="jobs-list${scrollable}">${items}</div>`
+}
+
+const applyTileLayer = (isDark: boolean): void => {
+  if (!map) return
+
+  if (tileLayer) {
+    map.removeLayer(tileLayer)
+  }
+
+  tileLayer = L.tileLayer(isDark ? DARK_TILE_URL : LIGHT_TILE_URL, {
+    attribution: TILE_ATTRIBUTION,
+    subdomains: 'abcd',
+    maxZoom: 20
+  })
+  tileLayer.addTo(map)
+}
+
+const handleColorSchemeChange = (event: MediaQueryListEvent): void => {
+  applyTileLayer(event.matches)
+}
+
+const emitBounds = (): void => {
+  if (!map) return
+  const bounds = map.getBounds()
+  emit('bounds-changed', {
+    north: bounds.getNorth(),
+    south: bounds.getSouth(),
+    east: bounds.getEast(),
+    west: bounds.getWest()
+  })
+}
+
+const initMap = (container: HTMLElement): void => {
   if (map) return
 
-  const mapContainer = document.getElementById('jobs-map')
-  if (!mapContainer) return
-
-  map = L.map('jobs-map', {
-    center: greeceCenter,
-    zoom: 6,
+  map = L.map(container, {
+    center: GREECE_CENTER,
+    zoom: GREECE_DEFAULT_ZOOM,
     zoomControl: true,
     scrollWheelZoom: true
   })
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 20
-  }).addTo(map)
+  applyTileLayer(darkModeQuery?.matches ?? false)
+  darkModeQuery?.addEventListener('change', handleColorSchemeChange)
 
-  markersLayer = L.layerGroup().addTo(map)
+  clusterGroup = L.markerClusterGroup({
+    iconCreateFunction: createClusterIcon,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    maxClusterRadius: 50
+  })
+  map.addLayer(clusterGroup)
+
+  map.on('moveend', emitBounds)
 }
 
-const updateMarkers = () => {
-  if (!map || !markersLayer) return
+const updateMarkers = (): void => {
+  if (!map || !clusterGroup) return
 
-  markersLayer.clearLayers()
+  clusterGroup.clearLayers()
+  markersByJobId = new Map()
 
-  const coordsMap = new Map<string, { lat: number; lng: number; jobs: Job[] }>()
+  const coordsGroups = new Map<string, { lat: number; lng: number; jobs: Job[] }>()
 
   for (const job of props.jobs) {
-    const location = job[2]
-    const coords = getCoords(location)
+    const coords = getJobCoords(job)
     if (!coords) continue
 
     const key = `${coords[0]},${coords[1]}`
-    if (coordsMap.has(key)) {
-      coordsMap.get(key)!.jobs.push(job)
+    const group = coordsGroups.get(key)
+    if (group) {
+      group.jobs.push(job)
     } else {
-      coordsMap.set(key, { lat: coords[0], lng: coords[1], jobs: [job] })
+      coordsGroups.set(key, { lat: coords[0], lng: coords[1], jobs: [job] })
     }
   }
 
-  for (const [, data] of coordsMap) {
-    const jobCount = data.jobs.length
-    const firstJob = data.jobs[0]
-    if (!firstJob) continue
-
+  for (const { lat, lng, jobs } of coordsGroups.values()) {
+    const count = jobs.length
     const icon = L.divIcon({
       className: 'custom-marker',
-      html: `<div class="marker-pin">${jobCount}</div>`,
+      html: `<div class="marker-pin">${count}</div>`,
       iconSize: [30, 30],
       iconAnchor: [15, 30],
       popupAnchor: [0, -30]
     })
 
-    const popupContent =
-      jobCount === 1
-        ? `<strong>${firstJob[0]}</strong><br>${firstJob[1]}<br><em>${firstJob[2]}</em>`
-        : `<strong>${jobCount} jobs</strong><div class="jobs-list${jobCount > 15 ? ' scrollable' : ''}">${data.jobs.map((j) => `${j[0]} - ${j[1]}`).join('<br>')}</div>`
+    const marker = L.marker([lat, lng], { icon })
+    marker.bindPopup(buildPopupContent(jobs))
+    marker.on('click', () => emit('marker-click', jobs))
 
-    L.marker([data.lat, data.lng], { icon }).bindPopup(popupContent).addTo(markersLayer!)
-  }
+    for (const job of jobs) {
+      markersByJobId.set(getJobId(job), marker)
+    }
 
-  if (coordsMap.size > 0) {
-    const bounds = L.latLngBounds(
-      Array.from(coordsMap.values()).map((d) => [d.lat, d.lng] as [number, number])
-    )
-    map.fitBounds(bounds, { padding: [30, 30] })
+    clusterGroup.addLayer(marker)
   }
 }
 
+const fitToMarkers = (): void => {
+  if (!map || !clusterGroup) return
+  if (clusterGroup.getLayers().length === 0) return
+
+  map.fitBounds(clusterGroup.getBounds(), { padding: [30, 30], maxZoom: 12 })
+}
+
+/**
+ * Pan/zoom to and open the popup for a specific job's marker.
+ * Used when a job is selected from the list panel.
+ */
+const flyToJob = (jobId: string): void => {
+  const marker = markersByJobId.get(jobId)
+  if (!map || !marker) return
+
+  map.flyTo(marker.getLatLng(), Math.max(map.getZoom(), 12))
+  marker.openPopup()
+}
+
+defineExpose({ flyToJob })
+
+let highlightedMarker: L.Marker | null = null
+
+const applyHighlight = (jobId: string | null | undefined): void => {
+  const previousElement = highlightedMarker?.getElement()
+  previousElement?.classList.remove('marker-highlighted')
+  highlightedMarker = null
+
+  if (!jobId) return
+
+  const marker = markersByJobId.get(jobId)
+  if (!marker) return
+
+  highlightedMarker = marker
+  marker.getElement()?.classList.add('marker-highlighted')
+}
+
 onMounted(() => {
-  initMap()
+  if (!mapContainer.value) return
+
+  initMap(mapContainer.value)
   updateMarkers()
+  fitToMarkers()
+  // Ensure listeners always receive an initial viewport, even when there
+  // are no markers to fit bounds to (moveend wouldn't otherwise fire).
+  emitBounds()
+
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => map?.invalidateSize())
+    resizeObserver.observe(mapContainer.value)
+  }
 })
 
 onUnmounted(() => {
+  darkModeQuery?.removeEventListener('change', handleColorSchemeChange)
+  resizeObserver?.disconnect()
   if (map) {
     map.remove()
     map = null
   }
 })
 
-watch(() => props.jobs, updateMarkers, { deep: true })
+watch(
+  () => props.jobs,
+  () => {
+    updateMarkers()
+    fitToMarkers()
+  },
+  { deep: true }
+)
+
+watch(() => props.highlightedJobId, applyHighlight)
 </script>
 
 <template>
-  <div class="relative w-full h-full min-h-[300px]">
-    <div id="jobs-map" class="absolute inset-0 w-full h-full rounded-lg overflow-hidden"></div>
-  </div>
+  <div ref="mapContainer" class="relative w-full h-full min-h-[300px]"></div>
 </template>
 
 <style>
@@ -235,6 +255,46 @@ watch(() => props.jobs, updateMarkers, { deep: true })
   font-size: 12px;
   transform: rotate(-45deg);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.marker-highlighted .marker-pin {
+  transform: rotate(-45deg) scale(1.35);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
+  z-index: 1000;
+}
+
+.marker-cluster-custom {
+  background: none;
+  border: none;
+}
+
+.marker-cluster-inner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 13px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+.marker-cluster-small {
+  background: #34d399;
+}
+
+.marker-cluster-medium {
+  background: #f59e0b;
+}
+
+.marker-cluster-large {
+  background: #ef4444;
 }
 
 .leaflet-popup-content-wrapper {
