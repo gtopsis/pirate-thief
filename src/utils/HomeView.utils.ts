@@ -160,3 +160,43 @@ export const applyUrlFiltersToMap = (
 
   return newFilters
 }
+
+// === Map View URL State ===
+const MAP_LAT_PARAM = 'lat'
+const MAP_LNG_PARAM = 'lng'
+const MAP_ZOOM_PARAM = 'z'
+
+export interface UrlMapView {
+  lat: number
+  lng: number
+  zoom: number
+}
+
+/**
+ * Parse a persisted map center/zoom from the URL search params, if present
+ * and valid.
+ */
+export const getMapViewFromUrl = (): UrlMapView | null => {
+  const params = new URLSearchParams(window.location.search)
+  const lat = Number(params.get(MAP_LAT_PARAM))
+  const lng = Number(params.get(MAP_LNG_PARAM))
+  const zoom = Number(params.get(MAP_ZOOM_PARAM))
+
+  if ([lat, lng, zoom].some((value) => !Number.isFinite(value))) return null
+
+  return { lat, lng, zoom }
+}
+
+/**
+ * Persist the current map center/zoom in the URL (without page reload),
+ * so the view can be shared/restored.
+ */
+export const setMapViewInUrl = (view: UrlMapView): void => {
+  const url = new URL(window.location.href)
+
+  url.searchParams.set(MAP_LAT_PARAM, view.lat.toFixed(4))
+  url.searchParams.set(MAP_LNG_PARAM, view.lng.toFixed(4))
+  url.searchParams.set(MAP_ZOOM_PARAM, String(view.zoom))
+
+  window.history.replaceState({}, '', url.toString())
+}

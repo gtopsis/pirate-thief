@@ -5,18 +5,27 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
+import 'leaflet.heat'
 import type { Job } from '@/types/types'
 import { GREECE_CENTER, GREECE_DEFAULT_ZOOM, getJobCoords, getJobId } from '@/utils/geo'
 import type { MapBounds } from '@/utils/geo'
 
+export interface MapView {
+  lat: number
+  lng: number
+  zoom: number
+}
+
 const props = defineProps<{
   jobs: readonly Job[]
   highlightedJobId?: string | null
+  initialView?: MapView | null
 }>()
 
 const emit = defineEmits<{
   (e: 'bounds-changed', bounds: MapBounds): void
   (e: 'marker-click', jobs: Job[]): void
+  (e: 'view-changed', view: MapView): void
 }>()
 
 const LIGHT_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
@@ -26,10 +35,13 @@ const TILE_ATTRIBUTION =
 
 let map: L.Map | null = null
 let clusterGroup: L.MarkerClusterGroup | null = null
+let heatLayer: L.HeatLayer | null = null
 let tileLayer: L.TileLayer | null = null
 let markersByJobId = new Map<string, L.Marker>()
 let resizeObserver: ResizeObserver | null = null
 const mapContainer = ref<HTMLDivElement | null>(null)
+type ViewMode = 'markers' | 'heatmap'
+const viewMode = ref<ViewMode>('markers')
 const darkModeQuery =
   typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-color-scheme: dark)')
@@ -89,14 +101,22 @@ const emitBounds = (): void => {
     east: bounds.getEast(),
     west: bounds.getWest()
   })
+
+  const center = map.getCenter()
+  emit('view-changed', { lat: center.lat, lng: center.lng, zoom: map.getZoom() })
 }
 
 const initMap = (container: HTMLElement): void => {
   if (map) return
 
+  const center: [number, number] = props.initialView
+    ? [props.initialView.lat, props.initialView.lng]
+    : GREECE_CENTER
+  const zoom = props.initialView?.zoom ?? GREECE_DEFAULT_ZOOM
+
   map = L.map(container, {
-    center: GREECE_CENTER,
-    zoom: GREECE_DEFAULT_ZOOM,
+    center,
+    zoom,
     zoomControl: true,
     scrollWheelZoom: true
   })
@@ -165,6 +185,70 @@ const fitToMarkers = (): void => {
   map.fitBounds(clusterGroup.getBounds(), { padding: [30, 30], maxZoom: 12 })
 }
 
+const buildHeatPoints = (): L.HeatLatLngTuple[] => {
+  const points: L.HeatLatLngTuple[] = []
+  for (const job of props.jobs) {
+    const coords = getJobCoords(job)
+    if (!coords) continue
+    points.push([coords[0], coords[1], 1])
+  }
+  return points
+}
+
+const updateHeatLayer = (): void => {
+  const points = buildHeatPoints()
+
+  if (heatLayer) {
+    heatLayer.setLatLngs(points)
+  } else {
+    heatLayer = L.heatLayer(points, { radius: 28, blur: 22, maxZoom: 12 })
+  }
+}
+
+const removeHeatLayerSafely = (): void => {
+  if (!map || !heatLayer) return
+  try {
+    if (map.hasLayer(heatLayer)) map.removeLayer(heatLayer)
+  } catch {
+    // A heat layer that failed to fully initialize may leave Leaflet's
+    // internal DOM bookkeeping inconsistent; ignore removal errors and
+    // just drop our reference so a fresh layer is created next time.
+  }
+  heatLayer = null
+}
+
+/**
+ * Show either the clustered pin markers or a density heatmap.
+ * Both layers are kept up to date; only one is attached to the map.
+ * Heatmap rendering relies on 2D canvas support; if it's unavailable or
+ * fails for any reason, we fall back to the marker view instead of
+ * crashing the app.
+ */
+const applyViewMode = (): void => {
+  if (!map || !clusterGroup) return
+
+  if (viewMode.value === 'heatmap') {
+    try {
+      updateHeatLayer()
+      if (map.hasLayer(clusterGroup)) map.removeLayer(clusterGroup)
+      if (heatLayer && !map.hasLayer(heatLayer)) heatLayer.addTo(map)
+      return
+    } catch (err) {
+      console.error('Heatmap view is unavailable, falling back to markers.', err)
+      removeHeatLayerSafely()
+      viewMode.value = 'markers'
+    }
+  }
+
+  removeHeatLayerSafely()
+  if (!map.hasLayer(clusterGroup)) clusterGroup.addTo(map)
+}
+
+const toggleViewMode = (): void => {
+  viewMode.value = viewMode.value === 'markers' ? 'heatmap' : 'markers'
+  applyViewMode()
+}
+
 /**
  * Pan/zoom to and open the popup for a specific job's marker.
  * Used when a job is selected from the list panel.
@@ -177,7 +261,7 @@ const flyToJob = (jobId: string): void => {
   marker.openPopup()
 }
 
-defineExpose({ flyToJob })
+defineExpose({ flyToJob, toggleViewMode })
 
 let highlightedMarker: L.Marker | null = null
 
@@ -200,7 +284,13 @@ onMounted(() => {
 
   initMap(mapContainer.value)
   updateMarkers()
-  fitToMarkers()
+  applyViewMode()
+
+  // Only auto-fit to markers when we don't have a persisted view to
+  // restore to (e.g. from a shared URL) -- otherwise respect it.
+  if (!props.initialView) {
+    fitToMarkers()
+  }
   // Ensure listeners always receive an initial viewport, even when there
   // are no markers to fit bounds to (moveend wouldn't otherwise fire).
   emitBounds()
@@ -215,7 +305,15 @@ onUnmounted(() => {
   darkModeQuery?.removeEventListener('change', handleColorSchemeChange)
   resizeObserver?.disconnect()
   if (map) {
-    map.remove()
+    try {
+      map.remove()
+    } catch (err) {
+      // A layer that failed to fully initialize (e.g. heatmap without
+      // canvas support) can leave Leaflet's internal DOM bookkeeping in an
+      // inconsistent state; swallow teardown errors rather than letting
+      // them surface as unhandled exceptions.
+      console.error('Error while tearing down the map', err)
+    }
     map = null
   }
 })
@@ -224,6 +322,9 @@ watch(
   () => props.jobs,
   () => {
     updateMarkers()
+    if (viewMode.value === 'heatmap') {
+      updateHeatLayer()
+    }
     fitToMarkers()
   },
   { deep: true }
@@ -233,7 +334,19 @@ watch(() => props.highlightedJobId, applyHighlight)
 </script>
 
 <template>
-  <div ref="mapContainer" class="relative w-full h-full min-h-[300px]"></div>
+  <div class="relative w-full h-full min-h-[300px]">
+    <div ref="mapContainer" class="absolute inset-0"></div>
+
+    <button
+      type="button"
+      class="map-view-toggle absolute top-3 right-3 z-[1000] rounded-lg px-3 py-1.5 text-xs font-semibold shadow-md bg-(--color-bg) text-(--color-text-1) ring-1 ring-inset ring-(--color-divider) cursor-pointer hover:opacity-90"
+      :aria-pressed="viewMode === 'heatmap'"
+      :title="viewMode === 'markers' ? 'Switch to heatmap view' : 'Switch to marker view'"
+      @click="toggleViewMode"
+    >
+      {{ viewMode === 'markers' ? 'Heatmap' : 'Markers' }}
+    </button>
+  </div>
 </template>
 
 <style>

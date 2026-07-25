@@ -30,6 +30,7 @@ describe('HomeView', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
+    window.history.replaceState({}, '', '/')
   })
 
   it('mounts without throwing, fetches jobs, and renders the map + job panel', async () => {
@@ -67,6 +68,44 @@ describe('HomeView', () => {
 
     expect(wrapper.text()).toContain('Backend Engineer')
     expect(wrapper.text()).not.toContain('Senior Frontend Engineer')
+
+    wrapper.unmount()
+  })
+
+  it('gracefully falls back to markers view if heatmap rendering is unavailable', async () => {
+    // jsdom doesn't implement canvas 2D contexts, so leaflet.heat can't
+    // actually render. This verifies the app degrades gracefully (no
+    // crash, button stays reflecting marker view) instead of relying on
+    // canvas support being present.
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const wrapper = mount(HomeView, { attachTo: document.body })
+    await flushPromises()
+
+    const toggle = wrapper.find('.map-view-toggle')
+    expect(toggle.exists()).toBe(true)
+    expect(toggle.text()).toBe('Heatmap')
+
+    await toggle.trigger('click')
+
+    // Falls back to markers view rather than crashing
+    expect(toggle.text()).toBe('Heatmap')
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Heatmap view is unavailable'),
+      expect.anything()
+    )
+
+    wrapper.unmount()
+  })
+
+  it('persists the map center/zoom in the URL', async () => {
+    const wrapper = mount(HomeView, { attachTo: document.body })
+    await flushPromises()
+
+    const params = new URLSearchParams(window.location.search)
+    expect(params.has('lat')).toBe(true)
+    expect(params.has('lng')).toBe(true)
+    expect(params.has('z')).toBe(true)
 
     wrapper.unmount()
   })

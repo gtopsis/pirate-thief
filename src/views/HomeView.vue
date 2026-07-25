@@ -22,7 +22,9 @@ import {
   countJobsByTechArea,
   getFiltersFromUrl,
   setFiltersInUrl,
-  applyUrlFiltersToMap
+  applyUrlFiltersToMap,
+  getMapViewFromUrl,
+  setMapViewInUrl
 } from '@/utils/HomeView.utils'
 
 // === Jobs Data ===
@@ -95,6 +97,13 @@ const jobsMapRef = ref<InstanceType<typeof JobsMap> | null>(null)
 const bottomSheetRef = ref<InstanceType<typeof BottomSheet> | null>(null)
 
 const isViewportFilterAvailable = computed(() => mapBounds.value !== null)
+
+// Restore a previously shared/persisted map center+zoom, if present in the URL.
+const initialMapView = getMapViewFromUrl()
+
+const handleViewChanged = (view: { lat: number; lng: number; zoom: number }): void => {
+  setMapViewInUrl(view)
+}
 
 // Jobs shown in the list panel: narrowed down to the current map viewport,
 // unless the user opted to see all matching jobs regardless of pan/zoom.
@@ -176,6 +185,9 @@ const handleKeydown = (event: KeyboardEvent): void => {
         handleRefresh()
       }
       break
+    case 'h':
+      jobsMapRef.value?.toggleViewMode()
+      break
     case 'escape':
       if (hasActiveFilters.value || searchQuery.value) {
         clearAllFilters()
@@ -246,9 +258,11 @@ onUnmounted(() => {
           ref="jobsMapRef"
           :jobs="filteredJobList"
           :highlighted-job-id="activeJobId"
+          :initial-view="initialMapView"
           class="absolute inset-0"
           @bounds-changed="handleBoundsChanged"
           @marker-click="handleMarkerClick"
+          @view-changed="handleViewChanged"
         />
 
         <!-- Mobile bottom sheet mirrors the same panel -->
