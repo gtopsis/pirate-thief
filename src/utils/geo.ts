@@ -10,10 +10,20 @@ export interface MapBounds {
 const GREEK_CITIES = [
   'athens',
   'thessaloniki',
+  // Neo Heraklio / Nea Irakleio is an Athens suburb (Attica), entirely
+  // distinct from Heraklion/Irakleio in Crete. These multi-word variants
+  // must be matched before the generic single-word "heraklio(n)" entries
+  // below, otherwise "Neo Heraklio" would incorrectly resolve to Crete
+  // (see getCoordsForLocation for how match order is enforced).
+  'neo heraklio',
+  'neo iraklio',
+  'neo irakleio',
+  'nea irakleio',
   'heraklion',
   'irakleion',
   'irakleio',
   'iraklion',
+  'iraklio',
   'patras',
   'volos',
   'ioannina',
@@ -56,13 +66,26 @@ const GREEK_CITIES = [
   'nafplio'
 ]
 
+// Sorted longest-first so that more specific, multi-word city names (e.g.
+// "neo heraklio") are always matched before shorter substrings they happen
+// to contain (e.g. "heraklio"/"heraklion"). Without this, substring
+// matching would silently misplace jobs onto the wrong city.
+const GREEK_CITIES_BY_SPECIFICITY = [...GREEK_CITIES].sort((a, b) => b.length - a.length)
+
 const GREECE_COORDS: Record<string, [number, number]> = {
   athens: [37.9838, 23.7275],
   thessaloniki: [40.6401, 22.9444],
+  // Neo Heraklio / Nea Irakleio, Attica (northern Athens suburb) --
+  // not to be confused with Heraklion, Crete.
+  'neo heraklio': [38.0489, 23.7621],
+  'neo iraklio': [38.0489, 23.7621],
+  'neo irakleio': [38.0489, 23.7621],
+  'nea irakleio': [38.0489, 23.7621],
   heraklion: [35.3617, 25.1648],
   irakleion: [35.3617, 25.1648],
   irakleio: [35.3617, 25.1648],
   iraklion: [35.3617, 25.1648],
+  iraklio: [35.3617, 25.1648],
   patras: [38.2464, 21.7346],
   volos: [39.3611, 22.9422],
   ioannina: [39.665, 20.8537],
@@ -117,7 +140,7 @@ export const getCoordsForLocation = (location: string): [number, number] | null 
 
   if (normalized === 'greece' || normalized === 'remote') return null
 
-  for (const city of GREEK_CITIES) {
+  for (const city of GREEK_CITIES_BY_SPECIFICITY) {
     if (normalized.includes(city)) {
       return GREECE_COORDS[city] ?? null
     }
