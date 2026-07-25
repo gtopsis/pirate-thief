@@ -8,7 +8,9 @@ const SOURCE_NAME = 'Startup Pirate'
 
 <template>
   <div class="text-center">
-    <h1 class="font-sans font-bold leading-snug antialiased mb-2 text-2xl text-(--color-text-1) md:text-4xl">
+    <h1
+      class="font-sans font-bold leading-snug antialiased mb-2 text-2xl text-(--color-text-1) md:text-4xl"
+    >
       {{ APP_NAME }}
     </h1>
 

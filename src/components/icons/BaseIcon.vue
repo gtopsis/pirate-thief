@@ -4,7 +4,7 @@ export type IconSize = 'sm' | 'md' | 'lg'
 const SIZE_MAP: Record<IconSize, number> = {
   sm: 16,
   md: 20,
-  lg: 24,
+  lg: 24
 }
 
 interface Props {
@@ -15,5 +15,5 @@ const props = withDefaults(defineProps<Props>(), { size: 'md', color: 'currentCo
 </script>
 
 <template>
-  <slot :sizeInPixels="SIZE_MAP[props.size]" :color="props.color" />
+  <slot :size-in-pixels="SIZE_MAP[props.size]" :color="props.color" />
 </template>

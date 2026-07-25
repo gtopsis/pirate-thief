@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Icon from '@/components/icons/Icon.vue'
-export type { IconSize } from '@/components/icons/Icon.vue'
+import BaseIcon from '@/components/icons/BaseIcon.vue'
+export type { IconSize } from '@/components/icons/BaseIcon.vue'
 
 interface Props {
   size?: 'sm' | 'md' | 'lg'
@@ -10,7 +10,7 @@ withDefaults(defineProps<Props>(), { size: 'md', color: '#2563eb' })
 </script>
 
 <template>
-  <Icon :size="size" :color="color" v-slot="{ sizeInPixels, color: iconColor }">
+  <BaseIcon v-slot="{ sizeInPixels, color: iconColor }" :size="size" :color="color">
     <svg
       class="animate-spin"
       :width="sizeInPixels"
@@ -30,5 +30,5 @@ withDefaults(defineProps<Props>(), { size: 'md', color: '#2563eb' })
         fill="currentFill"
       />
     </svg>
-  </Icon>
+  </BaseIcon>
 </template>

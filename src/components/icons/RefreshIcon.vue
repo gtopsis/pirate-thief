@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import Icon, { type IconSize } from '@/components/icons/Icon.vue'
+import BaseIcon, { type IconSize } from '@/components/icons/BaseIcon.vue'
 
 interface Props {
   size?: IconSize
   color?: string
 }
-withDefaults(defineProps<Props>(), { size: 'md' })
+const props = withDefaults(defineProps<Props>(), { size: 'md', color: 'currentColor' })
 </script>
 
 <template>
-  <Icon :size="size" :color="color" v-slot="{ sizeInPixels, color }">
+  <BaseIcon v-slot="{ sizeInPixels, color: iconColor }" :size="size" :color="props.color">
     <svg
+      id="refreshIcon"
       :width="sizeInPixels"
       :height="sizeInPixels"
-      :fill="color"
+      :fill="iconColor"
       version="1.1"
-      id="refreshIcon"
       xmlns="http://www.w3.org/2000/svg"
       xmlns:xlink="http://www.w3.org/1999/xlink"
       viewBox="0 0 489.698 489.698"
@@ -36,7 +36,7 @@ withDefaults(defineProps<Props>(), { size: 'md' })
         </g>
       </g>
     </svg>
-  </Icon>
+  </BaseIcon>
 </template>
 
 <style lang="css" scoped></style>

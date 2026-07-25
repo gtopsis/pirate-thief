@@ -43,7 +43,12 @@ export default [
       // for example, if you use pnpm workspace
       '**/node_modules',
       // also you can add a new rule to revert a ignore
-      '!./packages/manual-add-lib/node_modules/local-lib.js'
+      '!./packages/manual-add-lib/node_modules/local-lib.js',
+      // build output and coverage reports
+      'dist',
+      'coverage',
+      // legacy config kept for reference only
+      '.eslintrc.old.cjs'
     ]
   }
 ]
