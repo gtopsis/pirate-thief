@@ -109,4 +109,46 @@ describe('HomeView', () => {
 
     wrapper.unmount()
   })
+
+  it('surfaces jobs whose location could not be placed on the map', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockSpreadsheetResponse,
+            values: [
+              ...HEADER_ROWS,
+              ...JOB_ROWS,
+              [
+                'Delta LLC',
+                'QA Engineer',
+                'Definitely Not A Known City',
+                'QA',
+                'https://example.com/job/4'
+              ]
+            ]
+          })
+      })
+    )
+
+    const wrapper = mount(HomeView, { attachTo: document.body })
+    await flushPromises()
+
+    // "Remote" (from the base mock data) and the unknown/typo'd location
+    // are both unmappable, so the notice should report 2 jobs.
+    expect(wrapper.text()).toContain("2 jobs couldn't be placed on the map")
+
+    const notice = wrapper.find('button[aria-expanded]')
+    expect(notice.exists()).toBe(true)
+    expect(notice.attributes('aria-expanded')).toBe('false')
+
+    await notice.trigger('click')
+
+    expect(notice.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.text()).toContain('Definitely Not A Known City')
+
+    wrapper.unmount()
+  })
 })

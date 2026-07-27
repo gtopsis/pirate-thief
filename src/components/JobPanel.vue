@@ -3,6 +3,7 @@ import type { Job } from '@/types/types'
 import FilterList from '@/components/FilterList.vue'
 import JobList from '@/components/JobList.vue'
 import JobListSkeleton from '@/components/JobListSkeleton.vue'
+import UnmappedLocationsNotice from '@/components/UnmappedLocationsNotice.vue'
 
 const props = defineProps<{
   jobs: readonly Job[]
@@ -15,6 +16,7 @@ const props = defineProps<{
   showAllOnMap: boolean
   isViewportFilterAvailable: boolean
   highlightedJobId: string | null
+  unmappableJobs: readonly Job[]
 }>()
 
 const emit = defineEmits<{
@@ -67,6 +69,8 @@ const onSearchInput = (event: Event): void => {
       <p class="text-xs text-(--color-text-3)">
         Showing {{ props.jobs.length }} of {{ props.totalJobCount }} jobs
       </p>
+
+      <UnmappedLocationsNotice :jobs="props.unmappableJobs" />
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto px-3 py-3">

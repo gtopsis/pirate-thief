@@ -8,7 +8,7 @@ import BottomSheet from '@/components/BottomSheet.vue'
 import RefreshButton from '@/components/RefreshButton.vue'
 import { useFetch } from '@/composables/useFetch'
 import { jobsListApiUrl } from '@/utils'
-import { filterJobsByBounds, getJobId } from '@/utils/geo'
+import { filterJobsByBounds, getJobId, getUnmappableJobs } from '@/utils/geo'
 import type { MapBounds } from '@/utils/geo'
 import type { Job, SpreadSheetResponse } from '@/types/types'
 import {
@@ -112,6 +112,11 @@ const panelJobList = computed(() =>
     ? filteredJobList.value
     : filterJobsByBounds(filteredJobList.value, mapBounds.value)
 )
+
+// Jobs matching the current filters/search whose location couldn't be
+// geocoded at all (typo, unlisted place, etc.) -- surfaced in the panel so
+// data-entry issues are visible instead of silently vanishing from the map.
+const unmappableJobs = computed(() => getUnmappableJobs(filteredJobList.value))
 
 const handleBoundsChanged = (bounds: MapBounds): void => {
   mapBounds.value = bounds
@@ -243,6 +248,7 @@ onUnmounted(() => {
           :show-all-on-map="showAllOnMap"
           :is-viewport-filter-available="isViewportFilterAvailable"
           :highlighted-job-id="activeJobId"
+          :unmappable-jobs="unmappableJobs"
           @filter:click="toggleFilter"
           @clear-filters="clearAllFilters"
           @update:search-query="searchQuery = $event"
@@ -278,6 +284,7 @@ onUnmounted(() => {
             :show-all-on-map="showAllOnMap"
             :is-viewport-filter-available="isViewportFilterAvailable"
             :highlighted-job-id="activeJobId"
+            :unmappable-jobs="unmappableJobs"
             @filter:click="toggleFilter"
             @clear-filters="clearAllFilters"
             @update:search-query="searchQuery = $event"
