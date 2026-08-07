@@ -7,9 +7,12 @@ import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import 'leaflet.heat'
 import type { Job } from '@/types/types'
-import { GREECE_CENTER, GREECE_DEFAULT_ZOOM, getJobCoords, getJobId } from '@/utils/geo'
+import { GREECE_CENTER, GREECE_DEFAULT_ZOOM } from '@/utils/geo'
 import type { MapBounds } from '@/utils/geo'
 import { createRemoteJobsLayer } from '@/utils/remoteJobsLayer'
+import { createMarkerClusterLayer } from '@/utils/markerClusterLayer'
+import { createHeatmapLayer } from '@/utils/heatmapLayer'
+import { createDarkModeTileLayer } from '@/utils/darkModeTiles'
 
 export interface MapView {
   lat: number
@@ -30,75 +33,50 @@ const emit = defineEmits<{
   (e: 'view-changed', view: MapView): void
 }>()
 
-const LIGHT_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-const DARK_TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-
 let map: L.Map | null = null
-let clusterGroup: L.MarkerClusterGroup | null = null
-let heatLayer: L.HeatLayer | null = null
-let tileLayer: L.TileLayer | null = null
 let markersByJobId = new Map<string, L.Marker>()
 let resizeObserver: ResizeObserver | null = null
+let stopDarkModeListener: (() => void) | null = null
 const mapContainer = ref<HTMLDivElement | null>(null)
 type ViewMode = 'markers' | 'heatmap'
 const viewMode = ref<ViewMode>('markers')
-const darkModeQuery =
-  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia('(prefers-color-scheme: dark)')
-    : null
-
-const clusterIconClass = (count: number): string => {
-  if (count >= 30) return 'marker-cluster-large'
-  if (count >= 10) return 'marker-cluster-medium'
-  return 'marker-cluster-small'
-}
-
-const createClusterIcon = (cluster: L.MarkerCluster): L.DivIcon => {
-  const count = cluster.getChildCount()
-  return L.divIcon({
-    html: `<div class="marker-cluster-inner ${clusterIconClass(count)}"><span>${count}</span></div>`,
-    className: 'marker-cluster-custom',
-    iconSize: L.point(40, 40)
-  })
-}
 
 const buildPopupContent = (jobs: Job[]): string => {
   if (jobs.length === 1) {
-    const [company, title, location] = jobs[0]!
+    const { title, company, location } = jobs[0]!
     return `<strong>${title}</strong><br>${company}<br><em>${location}</em>`
   }
 
   const scrollable = jobs.length > 15 ? ' scrollable' : ''
-  const items = jobs.map(([company, title]) => `${company} - ${title}`).join('<br>')
+  const items = jobs.map((job) => `${job.company} - ${job.title}`).join('<br>')
   return `<strong>${jobs.length} jobs</strong><div class="jobs-list${scrollable}">${items}</div>`
 }
+
+const registerMarker = (jobId: string, marker: L.Marker): void => {
+  markersByJobId.set(jobId, marker)
+}
+
+// Each factory below owns one Leaflet layer's lifecycle (creation,
+// updates, attach/detach) so this component only has to orchestrate
+// *when* each layer is shown/refreshed, not *how*. All three share
+// `markersByJobId` (reset once per job-list change in refreshJobLayers,
+// then repopulated via registerMarker) so flyToJob/highlight work
+// uniformly across city markers and the remote-jobs marker.
+const markerClusterLayer = createMarkerClusterLayer({
+  buildPopupContent,
+  onMarkerClick: (jobs) => emit('marker-click', jobs),
+  registerMarker
+})
+
+const heatmapLayer = createHeatmapLayer()
+
+const darkModeTileLayer = createDarkModeTileLayer()
 
 const remoteJobsLayer = createRemoteJobsLayer({
   buildPopupContent,
   onMarkerClick: (jobs) => emit('marker-click', jobs),
-  registerMarker: (jobId, marker) => markersByJobId.set(jobId, marker)
+  registerMarker
 })
-
-const applyTileLayer = (isDark: boolean): void => {
-  if (!map) return
-
-  if (tileLayer) {
-    map.removeLayer(tileLayer)
-  }
-
-  tileLayer = L.tileLayer(isDark ? DARK_TILE_URL : LIGHT_TILE_URL, {
-    attribution: TILE_ATTRIBUTION,
-    subdomains: 'abcd',
-    maxZoom: 20
-  })
-  tileLayer.addTo(map)
-}
-
-const handleColorSchemeChange = (event: MediaQueryListEvent): void => {
-  applyTileLayer(event.matches)
-}
 
 const emitBounds = (): void => {
   if (!map) return
@@ -129,68 +107,10 @@ const initMap = (container: HTMLElement): void => {
     scrollWheelZoom: true
   })
 
-  applyTileLayer(darkModeQuery?.matches ?? false)
-  darkModeQuery?.addEventListener('change', handleColorSchemeChange)
-
-  clusterGroup = L.markerClusterGroup({
-    iconCreateFunction: createClusterIcon,
-    spiderfyOnMaxZoom: true,
-    showCoverageOnHover: false,
-    maxClusterRadius: 50
-  })
-  map.addLayer(clusterGroup)
+  stopDarkModeListener = darkModeTileLayer.attachTo(map)
+  markerClusterLayer.attachTo(map)
 
   map.on('moveend', emitBounds)
-}
-
-const updateMarkers = (): void => {
-  if (!map || !clusterGroup) return
-
-  clusterGroup.clearLayers()
-  markersByJobId = new Map()
-
-  const coordsGroups = new Map<string, { lat: number; lng: number; jobs: Job[] }>()
-
-  for (const job of props.jobs) {
-    const coords = getJobCoords(job)
-    if (!coords) continue
-
-    const key = `${coords[0]},${coords[1]}`
-    const group = coordsGroups.get(key)
-    if (group) {
-      group.jobs.push(job)
-    } else {
-      coordsGroups.set(key, { lat: coords[0], lng: coords[1], jobs: [job] })
-    }
-  }
-
-  for (const { lat, lng, jobs } of coordsGroups.values()) {
-    const count = jobs.length
-    const icon = L.divIcon({
-      className: 'custom-marker',
-      html: `<div class="marker-pin">${count}</div>`,
-      iconSize: [30, 30],
-      iconAnchor: [15, 30],
-      popupAnchor: [0, -30]
-    })
-
-    const marker = L.marker([lat, lng], { icon })
-    marker.bindPopup(buildPopupContent(jobs))
-    marker.on('click', () => emit('marker-click', jobs))
-
-    for (const job of jobs) {
-      markersByJobId.set(getJobId(job), marker)
-    }
-
-    clusterGroup.addLayer(marker)
-  }
-}
-
-const fitToMarkers = (): void => {
-  if (!map || !clusterGroup) return
-  if (clusterGroup.getLayers().length === 0) return
-
-  map.fitBounds(clusterGroup.getBounds(), { padding: [30, 30], maxZoom: 12 })
 }
 
 /**
@@ -203,36 +123,23 @@ const updateRemoteLayer = (): void => {
   remoteJobsLayer.update(map, props.remoteJobs ?? [], viewMode.value !== 'heatmap')
 }
 
-const buildHeatPoints = (): L.HeatLatLngTuple[] => {
-  const points: L.HeatLatLngTuple[] = []
-  for (const job of props.jobs) {
-    const coords = getJobCoords(job)
-    if (!coords) continue
-    points.push([coords[0], coords[1], 1])
-  }
-  return points
-}
+/**
+ * Rebuilds the city-marker layer, the remote overlay, and (if active) the
+ * heatmap from the current `props.jobs`/`props.remoteJobs`. Does not
+ * re-fit the viewport -- callers decide whether that's appropriate (see
+ * `syncMapForJobsChange` vs. the initial mount, which respects a
+ * persisted view instead of always fitting to markers).
+ */
+const refreshJobLayers = (): void => {
+  // Reset once per cycle: both layer factories only ever *add* entries via
+  // registerMarker, they never clear this shared registry themselves.
+  markersByJobId = new Map()
 
-const updateHeatLayer = (): void => {
-  const points = buildHeatPoints()
-
-  if (heatLayer) {
-    heatLayer.setLatLngs(points)
-  } else {
-    heatLayer = L.heatLayer(points, { radius: 28, blur: 22, maxZoom: 12 })
+  markerClusterLayer.update(props.jobs)
+  updateRemoteLayer()
+  if (viewMode.value === 'heatmap') {
+    heatmapLayer.update(props.jobs)
   }
-}
-
-const removeHeatLayerSafely = (): void => {
-  if (!map || !heatLayer) return
-  try {
-    if (map.hasLayer(heatLayer)) map.removeLayer(heatLayer)
-  } catch {
-    // A heat layer that failed to fully initialize may leave Leaflet's
-    // internal DOM bookkeeping inconsistent; ignore removal errors and
-    // just drop our reference so a fresh layer is created next time.
-  }
-  heatLayer = null
 }
 
 /**
@@ -243,30 +150,41 @@ const removeHeatLayerSafely = (): void => {
  * crashing the app.
  */
 const applyViewMode = (): void => {
-  if (!map || !clusterGroup) return
+  if (!map) return
 
   if (viewMode.value === 'heatmap') {
     try {
-      updateHeatLayer()
-      if (map.hasLayer(clusterGroup)) map.removeLayer(clusterGroup)
-      if (heatLayer && !map.hasLayer(heatLayer)) heatLayer.addTo(map)
+      heatmapLayer.update(props.jobs)
+      markerClusterLayer.detachFrom(map)
+      heatmapLayer.attachTo(map)
       updateRemoteLayer()
       return
     } catch (err) {
       console.error('Heatmap view is unavailable, falling back to markers.', err)
-      removeHeatLayerSafely()
+      heatmapLayer.detachFrom(map)
       viewMode.value = 'markers'
     }
   }
 
-  removeHeatLayerSafely()
-  if (!map.hasLayer(clusterGroup)) clusterGroup.addTo(map)
+  heatmapLayer.detachFrom(map)
+  markerClusterLayer.attachTo(map)
   updateRemoteLayer()
 }
 
 const toggleViewMode = (): void => {
   viewMode.value = viewMode.value === 'markers' ? 'heatmap' : 'markers'
   applyViewMode()
+}
+
+/**
+ * Rebuilds every job-derived map layer and re-fits the viewport. Runs
+ * whenever the job list or remote-job list changes after the initial
+ * mount.
+ */
+const syncMapForJobsChange = (): void => {
+  if (!map) return
+  refreshJobLayers()
+  markerClusterLayer.fitBounds(map)
 }
 
 /**
@@ -303,13 +221,13 @@ onMounted(() => {
   if (!mapContainer.value) return
 
   initMap(mapContainer.value)
-  updateMarkers()
+  refreshJobLayers()
   applyViewMode()
 
   // Only auto-fit to markers when we don't have a persisted view to
   // restore to (e.g. from a shared URL) -- otherwise respect it.
-  if (!props.initialView) {
-    fitToMarkers()
+  if (!props.initialView && map) {
+    markerClusterLayer.fitBounds(map)
   }
   // Ensure listeners always receive an initial viewport, even when there
   // are no markers to fit bounds to (moveend wouldn't otherwise fire).
@@ -322,7 +240,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  darkModeQuery?.removeEventListener('change', handleColorSchemeChange)
+  stopDarkModeListener?.()
   resizeObserver?.disconnect()
   if (map) {
     try {
@@ -338,20 +256,7 @@ onUnmounted(() => {
   }
 })
 
-watch(
-  () => props.jobs,
-  () => {
-    updateMarkers()
-    updateRemoteLayer()
-    if (viewMode.value === 'heatmap') {
-      updateHeatLayer()
-    }
-    fitToMarkers()
-  },
-  { deep: true }
-)
-
-watch(() => props.remoteJobs, updateRemoteLayer, { deep: true })
+watch([() => props.jobs, () => props.remoteJobs], syncMapForJobsChange, { deep: true })
 
 watch(() => props.highlightedJobId, applyHighlight)
 </script>

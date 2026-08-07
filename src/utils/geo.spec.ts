@@ -90,8 +90,13 @@ describe('isRemoteLocation', () => {
 })
 
 describe('getUnmappableJobs', () => {
-  // A Job is the tuple [company, title, location, techArea, url].
-  const jobAt = (location: string): Job => ['Acme', 'Engineer', location, 'Backend', 'https://x']
+  const jobAt = (location: string): Job => ({
+    company: 'Acme',
+    title: 'Engineer',
+    location,
+    techArea: 'Backend',
+    url: 'https://x'
+  })
 
   it('returns only jobs whose location could not be geocoded and are not remote listings', () => {
     const jobs = [
@@ -103,7 +108,7 @@ describe('getUnmappableJobs', () => {
 
     const unmappable = getUnmappableJobs(jobs)
 
-    expect(unmappable.map((job) => job[2])).toEqual(['Definitely Not A Known City'])
+    expect(unmappable.map((job) => job.location)).toEqual(['Definitely Not A Known City'])
   })
 
   it('returns an empty array when every job is mappable', () => {
@@ -114,7 +119,13 @@ describe('getUnmappableJobs', () => {
 })
 
 describe('getRemoteJobs', () => {
-  const jobAt = (location: string): Job => ['Acme', 'Engineer', location, 'Backend', 'https://x']
+  const jobAt = (location: string): Job => ({
+    company: 'Acme',
+    title: 'Engineer',
+    location,
+    techArea: 'Backend',
+    url: 'https://x'
+  })
 
   it('returns only remote job listings', () => {
     const jobs = [
@@ -127,7 +138,7 @@ describe('getRemoteJobs', () => {
 
     const remote = getRemoteJobs(jobs)
 
-    expect(remote.map((job) => job[2])).toEqual(['Remote'])
+    expect(remote.map((job) => job.location)).toEqual(['Remote'])
   })
 
   it('returns an empty array when no jobs are remote', () => {

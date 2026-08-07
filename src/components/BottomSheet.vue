@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
+import { pluralize } from '@/utils/text'
 
 const SNAP_POINTS = {
   collapsed: 0.12,
@@ -102,7 +103,7 @@ defineExpose({
     >
       <span class="w-10 h-1.5 rounded-full bg-(--color-divider)"></span>
       <span class="text-xs font-medium text-(--color-text-2)">
-        {{ props.jobCount }} job{{ props.jobCount === 1 ? '' : 's' }} in view
+        {{ props.jobCount }} {{ pluralize(props.jobCount, 'job') }} in view
       </span>
     </button>
 

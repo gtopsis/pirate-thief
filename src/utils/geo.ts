@@ -168,7 +168,8 @@ export const getCoordsForLocation = (location: string): [number, number] | null 
 /**
  * Resolve the coordinates for a given job based on its location field.
  */
-export const getJobCoords = (job: Job): [number, number] | null => getCoordsForLocation(job[2])
+export const getJobCoords = (job: Job): [number, number] | null =>
+  getCoordsForLocation(job.location)
 
 /**
  * Whether a job can be placed on the map (has resolvable coordinates).
@@ -191,7 +192,7 @@ export const isRemoteLocation = (location: string): boolean => {
 /**
  * Whether a job is a remote listing (see isRemoteLocation).
  */
-export const isJobRemote = (job: Job): boolean => isRemoteLocation(job[2])
+export const isJobRemote = (job: Job): boolean => isRemoteLocation(job.location)
 
 /**
  * Jobs that are remote listings -- since "remote" means the job could be
@@ -234,4 +235,5 @@ export const filterJobsByBounds = (jobs: readonly Job[], bounds: MapBounds | nul
  * A stable identity for a job, used to correlate list items with map markers.
  * Falls back to a composite key if the URL is missing/duplicated.
  */
-export const getJobId = (job: Job): string => job[4] || `${job[0]}-${job[1]}-${job[2]}`
+export const getJobId = (job: Job): string =>
+  job.url || `${job.company}-${job.title}-${job.location}`

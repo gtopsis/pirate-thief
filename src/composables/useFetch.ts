@@ -17,7 +17,6 @@ export const useFetch = <T>(url: string | Ref<string>) => {
 
       data.value = await response.json()
     } catch (err) {
-      console.error(err)
       error.value = err instanceof Error ? err : new Error(String(err))
 
       data.value = null

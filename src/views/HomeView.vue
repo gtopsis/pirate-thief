@@ -1,31 +1,33 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
-import { formatDistanceToNow } from 'date-fns'
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import AppHero from '@/components/AppHero.vue'
 import JobPanel from '@/components/JobPanel.vue'
 import JobsMap from '@/components/JobsMap.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
 import RefreshButton from '@/components/RefreshButton.vue'
 import { useFetch } from '@/composables/useFetch'
+import { useLastUpdatedText } from '@/composables/useLastUpdatedText'
 import { jobsListApiUrl } from '@/utils'
+import { scrollJobCardIntoView } from '@/utils/dom'
 import { filterJobsByBounds, getJobId, getRemoteJobs, getUnmappableJobs } from '@/utils/geo'
 import type { MapBounds } from '@/utils/geo'
 import type { Job, SpreadSheetResponse } from '@/types/types'
 import {
-  UPDATE_INTERVAL_MS,
   parseJobs,
   buildActiveFilterSet,
   filterJobs,
   searchJobs,
   buildFiltersFromJobs,
   toggleFilterInMap,
-  countJobsByTechArea,
+  countJobsByTechArea
+} from '@/utils/jobs'
+import {
   getFiltersFromUrl,
   setFiltersInUrl,
   applyUrlFiltersToMap,
   getMapViewFromUrl,
   setMapViewInUrl
-} from '@/utils/HomeView.utils'
+} from '@/utils/urlState'
 
 // === Jobs Data ===
 const { isLoading, error, data, fetchData } = useFetch<SpreadSheetResponse>(jobsListApiUrl)
@@ -51,6 +53,10 @@ const filteredJobList = computed(() => {
   return searchJobs(byTechArea, searchQuery.value)
 })
 
+// Rebuilds the filters Map from the current job list's tech areas
+// (preserving existing selections), then re-applies any filters persisted
+// in the URL. Called once up front and again after every successful fetch,
+// since a refresh can introduce/remove tech areas.
 const initFilters = (): void => {
   const baseFilters = buildFiltersFromJobs(validJobList.value, filters.value)
   const urlFilters = getFiltersFromUrl()
@@ -79,10 +85,6 @@ const clearAllFilters = (): void => {
   searchQuery.value = ''
   setFiltersInUrl(new Set())
 }
-
-// Watch job count to reinit filters only when necessary
-const jobCount = computed(() => validJobList.value.length)
-watch(jobCount, initFilters, { immediate: true })
 
 // === Map <-> List sync ===
 const mapBounds = shallowRef<MapBounds | null>(null)
@@ -124,6 +126,24 @@ const unmappableJobs = computed(() => getUnmappableJobs(filteredJobList.value))
 // map instead of being silently dropped or lumped in with unmappableJobs.
 const remoteJobs = computed(() => getRemoteJobs(filteredJobList.value))
 
+// Grouped so the desktop panel and mobile bottom sheet can both bind the
+// same JobPanel props with a single `v-bind`, instead of repeating every
+// prop at both call sites.
+const jobPanelProps = computed(() => ({
+  jobs: panelJobList.value,
+  totalJobCount: filteredJobList.value.length,
+  isLoading: isLoading.value,
+  error: !!error.value,
+  filters: filters.value,
+  jobCounts: jobCounts.value,
+  searchQuery: searchQuery.value,
+  showAllOnMap: showAllOnMap.value,
+  isViewportFilterAvailable: isViewportFilterAvailable.value,
+  highlightedJobId: activeJobId.value,
+  unmappableJobs: unmappableJobs.value,
+  remoteJobs: remoteJobs.value
+}))
+
 const handleBoundsChanged = (bounds: MapBounds): void => {
   mapBounds.value = bounds
 }
@@ -137,15 +157,6 @@ const handleJobSelect = (jobId: string): void => {
   jobsMapRef.value?.flyToJob(jobId)
 }
 
-const scrollJobIntoView = (jobId: string): void => {
-  nextTick(() => {
-    const escapedId = typeof CSS !== 'undefined' ? CSS.escape(jobId) : jobId
-    document
-      .querySelector(`[data-job-id="${escapedId}"]`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  })
-}
-
 const handleMarkerClick = (jobs: Job[]): void => {
   const firstJob = jobs[0]
   if (!firstJob) return
@@ -153,20 +164,11 @@ const handleMarkerClick = (jobs: Job[]): void => {
   const jobId = getJobId(firstJob)
   activeJobId.value = jobId
   bottomSheetRef.value?.expand()
-  scrollJobIntoView(jobId)
+  nextTick(() => scrollJobCardIntoView(jobId))
 }
 
 // === Last Updated Display ===
-const jobsLastUpdatedDate = ref<Date | null>(null)
-const jobsLastUpdatedText = ref('Jobs have not been fetched yet')
-
-const updateLastUpdatedText = (): void => {
-  if (jobsLastUpdatedDate.value) {
-    jobsLastUpdatedText.value = `Fetched ${formatDistanceToNow(jobsLastUpdatedDate.value)} ago`
-  }
-}
-
-let updateInterval: number | undefined
+const { lastUpdatedText: jobsLastUpdatedText, markUpdatedNow } = useLastUpdatedText()
 
 // === Data Fetching ===
 const fetchJobs = async (): Promise<void> => {
@@ -177,8 +179,8 @@ const fetchJobs = async (): Promise<void> => {
     return
   }
 
-  jobsLastUpdatedDate.value = new Date()
-  updateLastUpdatedText()
+  initFilters()
+  markUpdatedNow()
 }
 
 const handleRefresh = (): Promise<void> => fetchJobs()
@@ -209,16 +211,15 @@ const handleKeydown = (event: KeyboardEvent): void => {
 
 // === Lifecycle ===
 onMounted(async () => {
+  // Filters need at least one pass before the first fetch resolves, so the
+  // filter chips aren't briefly missing/mismatched on initial load.
+  initFilters()
   await fetchJobs()
 
-  updateInterval = window.setInterval(updateLastUpdatedText, UPDATE_INTERVAL_MS)
   window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
-  if (updateInterval) {
-    clearInterval(updateInterval)
-  }
   window.removeEventListener('keydown', handleKeydown)
 })
 </script>
@@ -244,18 +245,7 @@ onUnmounted(() => {
         class="hidden md:flex md:flex-col md:w-[380px] lg:w-[420px] shrink-0 border-r border-(--color-divider) bg-(--color-bg)"
       >
         <JobPanel
-          :jobs="panelJobList"
-          :total-job-count="filteredJobList.length"
-          :is-loading="isLoading"
-          :error="!!error"
-          :filters="filters"
-          :job-counts="jobCounts"
-          :search-query="searchQuery"
-          :show-all-on-map="showAllOnMap"
-          :is-viewport-filter-available="isViewportFilterAvailable"
-          :highlighted-job-id="activeJobId"
-          :unmappable-jobs="unmappableJobs"
-          :remote-jobs="remoteJobs"
+          v-bind="jobPanelProps"
           @filter:click="toggleFilter"
           @clear-filters="clearAllFilters"
           @update:search-query="searchQuery = $event"
@@ -282,18 +272,7 @@ onUnmounted(() => {
         <!-- Mobile bottom sheet mirrors the same panel -->
         <BottomSheet ref="bottomSheetRef" :job-count="panelJobList.length">
           <JobPanel
-            :jobs="panelJobList"
-            :total-job-count="filteredJobList.length"
-            :is-loading="isLoading"
-            :error="!!error"
-            :filters="filters"
-            :job-counts="jobCounts"
-            :search-query="searchQuery"
-            :show-all-on-map="showAllOnMap"
-            :is-viewport-filter-available="isViewportFilterAvailable"
-            :highlighted-job-id="activeJobId"
-            :unmappable-jobs="unmappableJobs"
-            :remote-jobs="remoteJobs"
+            v-bind="jobPanelProps"
             @filter:click="toggleFilter"
             @clear-filters="clearAllFilters"
             @update:search-query="searchQuery = $event"
