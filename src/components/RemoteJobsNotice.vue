@@ -10,10 +10,10 @@ const props = defineProps<{
 <template>
   <CollapsibleJobsNotice :jobs="props.jobs">
     <template #message="{ count }">
-      {{ count }} job{{ count === 1 ? '' : 's' }} couldn't be placed on the map
+      {{ count }} remote job{{ count === 1 ? '' : 's' }} shown as a nationwide overlay on the map
     </template>
     <template #item="{ job }">
-      <strong>{{ job[0] }}</strong> - {{ job[1] }}: "{{ job[2] }}"
+      <strong>{{ job[0] }}</strong> - {{ job[1] }}
     </template>
   </CollapsibleJobsNotice>
 </template>

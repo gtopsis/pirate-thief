@@ -1,0 +1,4 @@
+# Generated from Natural Earth data via scripts/generate-greece-boundary.mjs.
+# Left minified (single line) intentionally -- this is a large geometry and
+# pretty-printing it would balloon the file size for no benefit.
+src/data/greece-boundary.json

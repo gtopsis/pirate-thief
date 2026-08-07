@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { getCoordsForLocation, getUnmappableJobs } from '@/utils/geo'
+import {
+  getCoordsForLocation,
+  getRemoteJobs,
+  getUnmappableJobs,
+  isRemoteLocation
+} from '@/utils/geo'
 import type { Job } from '@/types/types'
 
 // Named coordinates so the test tables below read like plain English
@@ -68,11 +73,27 @@ describe('getCoordsForLocation', () => {
   })
 })
 
+describe('isRemoteLocation', () => {
+  it.each(['Remote', 'Remote, Greece', 'Fully Remote', 'REMOTE'])(
+    'returns true for "%s"',
+    (location) => {
+      expect(isRemoteLocation(location)).toBe(true)
+    }
+  )
+
+  it.each(['Athens', 'Athens (Remote)', 'Remote-work friendly Athens office', 'Unknown City'])(
+    'returns false for "%s" (resolves to a city, or has no "remote" keyword)',
+    (location) => {
+      expect(isRemoteLocation(location)).toBe(false)
+    }
+  )
+})
+
 describe('getUnmappableJobs', () => {
   // A Job is the tuple [company, title, location, techArea, url].
   const jobAt = (location: string): Job => ['Acme', 'Engineer', location, 'Backend', 'https://x']
 
-  it('returns only jobs whose location could not be geocoded', () => {
+  it('returns only jobs whose location could not be geocoded and are not remote listings', () => {
     const jobs = [
       jobAt('Athens'),
       jobAt('Definitely Not A Known City'),
@@ -82,12 +103,36 @@ describe('getUnmappableJobs', () => {
 
     const unmappable = getUnmappableJobs(jobs)
 
-    expect(unmappable.map((job) => job[2])).toEqual(['Definitely Not A Known City', 'Remote'])
+    expect(unmappable.map((job) => job[2])).toEqual(['Definitely Not A Known City'])
   })
 
   it('returns an empty array when every job is mappable', () => {
     const jobs = [jobAt('Athens'), jobAt('Thessaloniki')]
 
     expect(getUnmappableJobs(jobs)).toEqual([])
+  })
+})
+
+describe('getRemoteJobs', () => {
+  const jobAt = (location: string): Job => ['Acme', 'Engineer', location, 'Backend', 'https://x']
+
+  it('returns only remote job listings', () => {
+    const jobs = [
+      jobAt('Athens'),
+      jobAt('Definitely Not A Known City'),
+      jobAt('Remote'),
+      jobAt('Athens (Remote)'),
+      jobAt('Thessaloniki')
+    ]
+
+    const remote = getRemoteJobs(jobs)
+
+    expect(remote.map((job) => job[2])).toEqual(['Remote'])
+  })
+
+  it('returns an empty array when no jobs are remote', () => {
+    const jobs = [jobAt('Athens'), jobAt('Thessaloniki')]
+
+    expect(getRemoteJobs(jobs)).toEqual([])
   })
 })

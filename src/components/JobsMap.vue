@@ -9,6 +9,7 @@ import 'leaflet.heat'
 import type { Job } from '@/types/types'
 import { GREECE_CENTER, GREECE_DEFAULT_ZOOM, getJobCoords, getJobId } from '@/utils/geo'
 import type { MapBounds } from '@/utils/geo'
+import { createRemoteJobsLayer } from '@/utils/remoteJobsLayer'
 
 export interface MapView {
   lat: number
@@ -18,6 +19,7 @@ export interface MapView {
 
 const props = defineProps<{
   jobs: readonly Job[]
+  remoteJobs?: readonly Job[]
   highlightedJobId?: string | null
   initialView?: MapView | null
 }>()
@@ -72,6 +74,12 @@ const buildPopupContent = (jobs: Job[]): string => {
   const items = jobs.map(([company, title]) => `${company} - ${title}`).join('<br>')
   return `<strong>${jobs.length} jobs</strong><div class="jobs-list${scrollable}">${items}</div>`
 }
+
+const remoteJobsLayer = createRemoteJobsLayer({
+  buildPopupContent,
+  onMarkerClick: (jobs) => emit('marker-click', jobs),
+  registerMarker: (jobId, marker) => markersByJobId.set(jobId, marker)
+})
 
 const applyTileLayer = (isDark: boolean): void => {
   if (!map) return
@@ -185,6 +193,16 @@ const fitToMarkers = (): void => {
   map.fitBounds(clusterGroup.getBounds(), { padding: [30, 30], maxZoom: 12 })
 }
 
+/**
+ * Show/hide the nationwide remote-jobs overlay (see remoteJobsLayer).
+ * Hidden in heatmap view, where a translucent country-wide fill would
+ * visually compete with the heatmap's own color scale.
+ */
+const updateRemoteLayer = (): void => {
+  if (!map) return
+  remoteJobsLayer.update(map, props.remoteJobs ?? [], viewMode.value !== 'heatmap')
+}
+
 const buildHeatPoints = (): L.HeatLatLngTuple[] => {
   const points: L.HeatLatLngTuple[] = []
   for (const job of props.jobs) {
@@ -232,6 +250,7 @@ const applyViewMode = (): void => {
       updateHeatLayer()
       if (map.hasLayer(clusterGroup)) map.removeLayer(clusterGroup)
       if (heatLayer && !map.hasLayer(heatLayer)) heatLayer.addTo(map)
+      updateRemoteLayer()
       return
     } catch (err) {
       console.error('Heatmap view is unavailable, falling back to markers.', err)
@@ -242,6 +261,7 @@ const applyViewMode = (): void => {
 
   removeHeatLayerSafely()
   if (!map.hasLayer(clusterGroup)) clusterGroup.addTo(map)
+  updateRemoteLayer()
 }
 
 const toggleViewMode = (): void => {
@@ -322,6 +342,7 @@ watch(
   () => props.jobs,
   () => {
     updateMarkers()
+    updateRemoteLayer()
     if (viewMode.value === 'heatmap') {
       updateHeatLayer()
     }
@@ -329,6 +350,8 @@ watch(
   },
   { deep: true }
 )
+
+watch(() => props.remoteJobs, updateRemoteLayer, { deep: true })
 
 watch(() => props.highlightedJobId, applyHighlight)
 </script>
@@ -377,6 +400,18 @@ watch(() => props.highlightedJobId, applyHighlight)
   transform: rotate(-45deg) scale(1.35);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
   z-index: 1000;
+}
+
+/*
+ * Distinguishes the fixed "remote jobs" marker (placed at the country's
+ * center, representing all of Greece) from city-pinned markers.
+ */
+.marker-pin-remote {
+  background: #8b5cf6;
+}
+
+.marker-highlighted .marker-pin-remote {
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.4);
 }
 
 .marker-cluster-custom {

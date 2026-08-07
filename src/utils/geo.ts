@@ -52,6 +52,12 @@ const ALIAS_ENTRIES: AliasEntry[] = CITY_ENTRIES.flatMap((entry) =>
 
 const NON_MAPPABLE_VALUES = new Set(['greece', 'remote', ''])
 
+// Matches "remote" as a standalone word (normalized input has no
+// punctuation, so word boundaries fall on spaces/string edges), catching
+// phrasing like "Remote", "Remote, Greece", "Fully Remote" -- but see
+// isRemoteLocation below for how this combines with city resolution.
+const REMOTE_KEYWORD = /(^| )remote( |$)/
+
 const findExactMatch = (normalizedInput: string): CityEntry | null => {
   for (const { alias, entry } of ALIAS_ENTRIES) {
     if (normalizedInput.includes(alias)) return entry
@@ -170,13 +176,39 @@ export const getJobCoords = (job: Job): [number, number] | null => getCoordsForL
 export const isJobMappable = (job: Job): boolean => getJobCoords(job) !== null
 
 /**
- * Jobs whose location couldn't be resolved to map coordinates -- useful
- * for surfacing a "N jobs couldn't be placed on the map" notice so data
- * issues (typos, unlisted places) are visible instead of silently
- * disappearing from the map.
+ * Whether a location string represents a remote listing rather than a
+ * genuinely unresolvable/mistyped place. A location only counts as
+ * "remote" when it contains the word "remote" *and* doesn't otherwise
+ * resolve to a known city -- so hybrid listings like "Athens (Remote)"
+ * are still treated as Athens jobs, and only location-less remote ads
+ * (e.g. "Remote", "Remote, Greece", "Fully Remote") are flagged here.
+ */
+export const isRemoteLocation = (location: string): boolean => {
+  const normalized = normalizeLocation(location)
+  return REMOTE_KEYWORD.test(normalized) && getCoordsForLocation(location) === null
+}
+
+/**
+ * Whether a job is a remote listing (see isRemoteLocation).
+ */
+export const isJobRemote = (job: Job): boolean => isRemoteLocation(job[2])
+
+/**
+ * Jobs that are remote listings -- since "remote" means the job could be
+ * worked from anywhere in Greece, these are represented separately from
+ * both mappable (city-pinned) jobs and genuinely unmappable ones.
+ */
+export const getRemoteJobs = (jobs: readonly Job[]): Job[] => jobs.filter(isJobRemote)
+
+/**
+ * Jobs whose location couldn't be resolved to map coordinates and aren't
+ * remote listings -- useful for surfacing a "N jobs couldn't be placed
+ * on the map" notice so genuine data issues (typos, unlisted places) are
+ * visible instead of silently disappearing from the map, without lumping
+ * in legitimate remote jobs (see getRemoteJobs for those).
  */
 export const getUnmappableJobs = (jobs: readonly Job[]): Job[] =>
-  jobs.filter((job) => !isJobMappable(job))
+  jobs.filter((job) => !isJobMappable(job) && !isJobRemote(job))
 
 const isCoordInBounds = (coord: [number, number], bounds: MapBounds): boolean => {
   const [lat, lng] = coord

@@ -3,6 +3,7 @@ import type { Job } from '@/types/types'
 import FilterList from '@/components/FilterList.vue'
 import JobList from '@/components/JobList.vue'
 import JobListSkeleton from '@/components/JobListSkeleton.vue'
+import RemoteJobsNotice from '@/components/RemoteJobsNotice.vue'
 import UnmappedLocationsNotice from '@/components/UnmappedLocationsNotice.vue'
 
 const props = defineProps<{
@@ -17,6 +18,7 @@ const props = defineProps<{
   isViewportFilterAvailable: boolean
   highlightedJobId: string | null
   unmappableJobs: readonly Job[]
+  remoteJobs: readonly Job[]
 }>()
 
 const emit = defineEmits<{
@@ -70,6 +72,7 @@ const onSearchInput = (event: Event): void => {
         Showing {{ props.jobs.length }} of {{ props.totalJobCount }} jobs
       </p>
 
+      <RemoteJobsNotice :jobs="props.remoteJobs" />
       <UnmappedLocationsNotice :jobs="props.unmappableJobs" />
     </div>
 

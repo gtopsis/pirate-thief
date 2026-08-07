@@ -8,7 +8,7 @@ import BottomSheet from '@/components/BottomSheet.vue'
 import RefreshButton from '@/components/RefreshButton.vue'
 import { useFetch } from '@/composables/useFetch'
 import { jobsListApiUrl } from '@/utils'
-import { filterJobsByBounds, getJobId, getUnmappableJobs } from '@/utils/geo'
+import { filterJobsByBounds, getJobId, getRemoteJobs, getUnmappableJobs } from '@/utils/geo'
 import type { MapBounds } from '@/utils/geo'
 import type { Job, SpreadSheetResponse } from '@/types/types'
 import {
@@ -117,6 +117,12 @@ const panelJobList = computed(() =>
 // geocoded at all (typo, unlisted place, etc.) -- surfaced in the panel so
 // data-entry issues are visible instead of silently vanishing from the map.
 const unmappableJobs = computed(() => getUnmappableJobs(filteredJobList.value))
+
+// Jobs matching the current filters/search that are remote listings --
+// these can't be pinned to a single place (the job could be worked from
+// anywhere in Greece), so they're rendered as a nationwide overlay on the
+// map instead of being silently dropped or lumped in with unmappableJobs.
+const remoteJobs = computed(() => getRemoteJobs(filteredJobList.value))
 
 const handleBoundsChanged = (bounds: MapBounds): void => {
   mapBounds.value = bounds
@@ -249,6 +255,7 @@ onUnmounted(() => {
           :is-viewport-filter-available="isViewportFilterAvailable"
           :highlighted-job-id="activeJobId"
           :unmappable-jobs="unmappableJobs"
+          :remote-jobs="remoteJobs"
           @filter:click="toggleFilter"
           @clear-filters="clearAllFilters"
           @update:search-query="searchQuery = $event"
@@ -263,6 +270,7 @@ onUnmounted(() => {
         <JobsMap
           ref="jobsMapRef"
           :jobs="filteredJobList"
+          :remote-jobs="remoteJobs"
           :highlighted-job-id="activeJobId"
           :initial-view="initialMapView"
           class="absolute inset-0"
@@ -285,6 +293,7 @@ onUnmounted(() => {
             :is-viewport-filter-available="isViewportFilterAvailable"
             :highlighted-job-id="activeJobId"
             :unmappable-jobs="unmappableJobs"
+            :remote-jobs="remoteJobs"
             @filter:click="toggleFilter"
             @clear-filters="clearAllFilters"
             @update:search-query="searchQuery = $event"

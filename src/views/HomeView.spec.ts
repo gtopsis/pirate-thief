@@ -19,7 +19,8 @@ const BACKEND_JOB = [
   'Backend',
   'https://example.com/job/2'
 ]
-// Legitimately unmappable: a fully-remote role has no city to plot.
+// Remote listing: has no city to plot, but is a legitimate location value
+// (not a data error) -- shown as a nationwide map overlay instead.
 const REMOTE_JOB = ['Gamma Inc', 'DevOps Engineer', 'Remote', 'DevOps', 'https://example.com/job/3']
 
 const DEFAULT_JOB_ROWS = [FRONTEND_JOB, BACKEND_JOB, REMOTE_JOB]
@@ -132,16 +133,25 @@ describe('HomeView', () => {
 
     wrapper = await mountHomeView()
 
-    // REMOTE_JOB and the unknown/typo'd location are both unmappable, so
-    // the notice should report 2 jobs.
-    expect(wrapper.text()).toContain("2 jobs couldn't be placed on the map")
+    // Only the unknown/typo'd location counts as unmappable -- REMOTE_JOB
+    // is a legitimate remote listing, surfaced separately (see below).
+    expect(wrapper.text()).toContain("1 job couldn't be placed on the map")
 
-    const notice = wrapper.find('button[aria-expanded]')
+    const notice = wrapper.findAll('button[aria-expanded]')[0]!
     expect(notice.attributes('aria-expanded')).toBe('false')
 
     await notice.trigger('click')
 
     expect(notice.attributes('aria-expanded')).toBe('true')
     expect(wrapper.text()).toContain('Definitely Not A Known City')
+  })
+
+  it('surfaces remote jobs as a distinct nationwide overlay, not as an unmappable/error job', async () => {
+    wrapper = await mountHomeView()
+
+    // REMOTE_JOB (from DEFAULT_JOB_ROWS) is not counted as an error...
+    expect(wrapper.text()).not.toContain("couldn't be placed on the map")
+    // ...but is surfaced via its own notice instead.
+    expect(wrapper.text()).toContain('1 remote job shown as a nationwide overlay on the map')
   })
 })
