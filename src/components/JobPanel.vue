@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { Job } from '@/types/types'
 import type { MapFocus } from '@/composables/useMapView'
 import ActiveFiltersBar from '@/components/ActiveFiltersBar.vue'
@@ -8,12 +7,10 @@ import JobList from '@/components/JobList.vue'
 import JobListSkeleton from '@/components/JobListSkeleton.vue'
 import RemoteJobsNotice from '@/components/RemoteJobsNotice.vue'
 import UnmappedLocationsNotice from '@/components/UnmappedLocationsNotice.vue'
-import { pluralize } from '@/utils/text'
 
 const props = withDefaults(
   defineProps<{
     jobs: readonly Job[]
-    totalJobCount: number
     isLoading: boolean
     error: boolean
     filters: Map<string, boolean>
@@ -26,17 +23,36 @@ const props = withDefaults(
     unmappableJobs: readonly Job[]
     remoteJobs: readonly Job[]
     /**
-     * Hides secondary/administrative controls (the map-sync toggle, the
-     * redundant job-count line, and the remote/unmapped notices), keeping
-     * only search + filters + the active-filters bar + the list itself.
-     * Used for the mobile bottom sheet's "half" (quick-glance) state,
-     * where those pieces would otherwise eat into the little space
-     * available for the list. Defaults to false so the desktop panel
-     * (which has no such space constraint) always shows everything.
+     * The single "how many jobs am I looking at" label (see
+     * utils/text.ts's formatJobCountText) -- computed once by the parent
+     * (HomeView) from the same shown/total counts used everywhere else,
+     * so this panel and the mobile bottom sheet's persistent handle
+     * always agree, instead of each formatting their own similar-but-not
+     * -quite-identical text.
+     */
+    jobCountText: string
+    /**
+     * Whether this panel instance should render `jobCountText` itself.
+     * False when embedded in the mobile bottom sheet, whose own handle
+     * already shows this same label persistently (in every snap state,
+     * including collapsed) -- rendering it a second time here once the
+     * sheet reaches its "full" (non-compact) state would just repeat the
+     * exact same information right below it. True (default) for the
+     * desktop sidebar, which has no such persistent handle of its own.
+     */
+    showJobCountText?: boolean
+    /**
+     * Hides secondary/administrative controls (the map-sync toggle, and
+     * the remote/unmapped notices), keeping only search + filters + the
+     * active-filters bar + the list itself. Used for the mobile bottom
+     * sheet's "half" (quick-glance) state, where those pieces would
+     * otherwise eat into the little space available for the list.
+     * Defaults to false so the desktop panel (which has no such space
+     * constraint) always shows everything.
      */
     compact?: boolean
   }>(),
-  { compact: false }
+  { compact: false, showJobCountText: true }
 )
 
 const emit = defineEmits<{
@@ -61,16 +77,6 @@ const onSyncToggleChange = (event: Event): void => {
     emit('show-all-jobs')
   }
 }
-
-// Only spells out "N of M" when the list is actually narrower than the
-// total matches (i.e. the current map focus is hiding some of them) --
-// when they're equal, "N of N" adds nothing over just "N jobs".
-const jobCountText = computed(() => {
-  const { length } = props.jobs
-  return length === props.totalJobCount
-    ? `${length} ${pluralize(length, 'job')}`
-    : `Showing ${length} of ${props.totalJobCount} jobs`
-})
 </script>
 
 <template>
@@ -119,12 +125,12 @@ const jobCountText = computed(() => {
       </label>
 
       <p
-        v-if="!props.compact"
+        v-if="!props.compact && props.showJobCountText"
         aria-live="polite"
         aria-atomic="true"
         class="text-xs text-(--color-text-3)"
       >
-        {{ jobCountText }}
+        {{ props.jobCountText }}
       </p>
 
       <template v-if="!props.compact">

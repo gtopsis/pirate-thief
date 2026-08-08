@@ -71,7 +71,7 @@ const CURATED_PLACE_GROUPS = [
       'Metamorfosi', 'Neo Irakleio', 'Nea Ionia', 'Chaidari', 'Aigaleo',
       'Petroupoli', 'Acharnes', 'Elefsina', 'Megara', 'Rafina', 'Spata',
       'Koropi', 'Salamina', 'Korydallos', 'Keratsini', 'Perama', 'Alimos',
-      'Argyroupoli', 'Elliniko', 'Ymittos', 'Dafni'
+      'Argyroupoli', 'Elliniko', 'Ymittos', 'Dafni', 'Paiania'
     ]
   },
   {

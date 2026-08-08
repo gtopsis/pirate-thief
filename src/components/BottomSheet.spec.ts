@@ -4,14 +4,14 @@ import BottomSheet from '@/components/BottomSheet.vue'
 
 describe('BottomSheet', () => {
   it('starts collapsed', () => {
-    const wrapper = mount(BottomSheet, { props: { jobCount: 3 } })
+    const wrapper = mount(BottomSheet, { props: { jobCountText: '3 jobs' } })
 
     const handle = wrapper.find('button')
     expect(handle.attributes('aria-expanded')).toBe('false')
   })
 
   it('cycles collapsed -> half -> full -> collapsed on tap (WCAG 2.5.7: non-drag path to every snap point)', async () => {
-    const wrapper = mount(BottomSheet, { props: { jobCount: 3 } })
+    const wrapper = mount(BottomSheet, { props: { jobCountText: '3 jobs' } })
     const handle = wrapper.find('button')
 
     // collapsed -> half
@@ -30,7 +30,7 @@ describe('BottomSheet', () => {
   })
 
   it('exposes expand()/collapse() methods used by marker-click and other flows', async () => {
-    const wrapper = mount(BottomSheet, { props: { jobCount: 3 } })
+    const wrapper = mount(BottomSheet, { props: { jobCountText: '3 jobs' } })
     const vm = wrapper.vm as unknown as { expand: () => void; collapse: () => void }
 
     vm.expand()

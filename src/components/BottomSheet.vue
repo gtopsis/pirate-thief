@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { pluralize } from '@/utils/text'
 
 const SNAP_POINTS = {
   collapsed: 0.12,
@@ -16,7 +15,15 @@ type SnapPoint = keyof typeof SNAP_POINTS
 const DRAG_THRESHOLD_PX = 10
 
 const props = defineProps<{
-  jobCount: number
+  /**
+   * The single "how many jobs am I looking at" label (see
+   * utils/text.ts's formatJobCountText), shown persistently on this
+   * handle regardless of snap state (collapsed/half/full) -- this is the
+   * mobile canonical place for that information, so the JobPanel content
+   * rendered inside this sheet is told not to repeat it (see its
+   * `showJobCountText` prop).
+   */
+  jobCountText: string
 }>()
 
 const snap = ref<SnapPoint>('collapsed')
@@ -165,7 +172,7 @@ defineExpose({
     >
       <span class="w-10 h-1.5 rounded-full bg-(--color-divider)"></span>
       <span class="flex items-center gap-1 text-xs font-medium text-(--color-text-2)">
-        {{ props.jobCount }} {{ pluralize(props.jobCount, 'job') }} in view
+        {{ props.jobCountText }}
         <span aria-hidden="true">{{ isExpanded ? '▾' : '▴' }}</span>
       </span>
     </button>

@@ -10,6 +10,7 @@ import { useJobFilters } from '@/composables/useJobFilters'
 import { useMapView } from '@/composables/useMapView'
 import { scrollJobCardIntoView } from '@/utils/dom'
 import { getJobId } from '@/utils/geo'
+import { formatJobCountText } from '@/utils/text'
 import type { Job } from '@/types/types'
 
 // === Module 1: spreadsheet/data source ===
@@ -53,12 +54,22 @@ const activeJobId = ref<string | null>(null)
 const jobsMapRef = ref<InstanceType<typeof JobsMap> | null>(null)
 const bottomSheetRef = ref<InstanceType<typeof BottomSheet> | null>(null)
 
+// The single "how many jobs am I looking at" label, shared by the
+// desktop sidebar and the mobile bottom sheet's persistent handle (see
+// JobPanel's/BottomSheet's jobCountText props) -- computed once here so
+// there's exactly one such message, worded one way, instead of each
+// place separately formatting its own similar-but-not-quite-identical
+// text from these same two numbers.
+const jobCountText = computed(() =>
+  formatJobCountText(panelJobList.value.length, filteredJobList.value.length)
+)
+
 // Grouped so the desktop panel and mobile bottom sheet can both bind the
 // same JobPanel props with a single `v-bind`, instead of repeating every
 // prop at both call sites.
 const jobPanelProps = computed(() => ({
   jobs: panelJobList.value,
-  totalJobCount: filteredJobList.value.length,
+  jobCountText: jobCountText.value,
   isLoading: isLoading.value,
   error: !!error.value,
   filters: filters.value,
@@ -213,14 +224,18 @@ onUnmounted(() => {
           @view-changed="handleViewChanged"
         />
 
-        <!-- Mobile bottom sheet mirrors the same panel. Only the "full"
-             snap state shows every control (see JobPanel's `compact`
-             prop) -- "half" stays focused on search + filters + the list. -->
-        <BottomSheet ref="bottomSheetRef" :job-count="panelJobList.length">
+        <!-- Mobile bottom sheet mirrors the same panel. Its handle shows
+             jobCountText persistently (every snap state), so the panel
+             itself is told not to repeat it (showJobCountText). Only the
+             "full" snap state shows every other control (see JobPanel's
+             `compact` prop) -- "half" stays focused on search + filters
+             + the list. -->
+        <BottomSheet ref="bottomSheetRef" :job-count-text="jobCountText">
           <template #default="{ isFull }">
             <JobPanel
               v-bind="jobPanelProps"
               :compact="!isFull"
+              :show-job-count-text="false"
               @filter:click="toggleFilter"
               @clear-filters="clearEverything"
               @update:search-query="searchQuery = $event"
