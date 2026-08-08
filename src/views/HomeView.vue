@@ -155,12 +155,14 @@ onUnmounted(() => {
 
 <template>
   <div class="app-shell h-[100dvh] w-full flex flex-col overflow-hidden bg-(--color-bg)">
+    <!-- Mobile topbar only -- on desktop this same content lives inside
+         the sidebar below instead of a separate full-width header row. -->
     <header
-      class="shrink-0 flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-2 px-4 py-2 md:py-3 border-b border-(--color-divider)"
+      class="md:hidden shrink-0 flex flex-col gap-1 px-4 py-2 border-b border-(--color-divider)"
     >
       <AppHero compact />
 
-      <div class="flex justify-center md:justify-end items-center gap-2">
+      <div class="flex justify-center items-center gap-2">
         <p aria-live="polite" aria-atomic="true" class="text-xs text-(--color-text-3)">
           {{ jobsLastUpdatedText }}
         </p>
@@ -169,10 +171,22 @@ onUnmounted(() => {
     </header>
 
     <main class="flex-1 min-h-0 relative flex flex-col md:flex-row">
-      <!-- Desktop side panel -->
+      <!-- Desktop sidebar: branding/refresh header + the job panel, as the
+           one persistent column alongside the map (the app's only other
+           top-level region on desktop -- see the main view below). -->
       <aside
         class="hidden md:flex md:flex-col md:w-[380px] lg:w-[420px] shrink-0 border-r border-(--color-divider) bg-(--color-bg)"
       >
+        <div class="shrink-0 flex flex-col gap-1 px-4 py-3 border-b border-(--color-divider)">
+          <div class="flex items-center justify-between gap-2">
+            <AppHero compact />
+            <RefreshButton :is-loading="isLoading" @click="handleRefresh" />
+          </div>
+          <p aria-live="polite" aria-atomic="true" class="text-xs text-(--color-text-3)">
+            {{ jobsLastUpdatedText }}
+          </p>
+        </div>
+
         <JobPanel
           v-bind="jobPanelProps"
           @filter:click="toggleFilter"
@@ -185,7 +199,7 @@ onUnmounted(() => {
         />
       </aside>
 
-      <!-- Map fills the remaining space on every device -->
+      <!-- Main view: the map fills the remaining space on every device -->
       <div class="flex-1 min-w-0 relative">
         <JobsMap
           ref="jobsMapRef"
