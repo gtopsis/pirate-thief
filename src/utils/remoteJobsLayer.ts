@@ -2,6 +2,7 @@ import L from 'leaflet'
 import type { Geometry } from 'geojson'
 import type { Job } from '@/types/types'
 import { GREECE_CENTER, getJobId } from '@/utils/geo'
+import { isMobileViewport } from '@/utils/viewport'
 import greeceBoundary from '@/data/greece-boundary.json'
 
 export interface RemoteJobsLayerCallbacks {
@@ -68,7 +69,12 @@ export const createRemoteJobsLayer = (callbacks: RemoteJobsLayerCallbacks) => {
     })
 
     marker = L.marker(GREECE_CENTER, { icon, zIndexOffset: 1000 })
-    marker.bindPopup(callbacks.buildPopupContent([...remoteJobs]))
+    // See markerClusterLayer.ts's identical comment: on mobile the
+    // bottom sheet already shows the same jobs in a roomier view once
+    // onMarkerClick fires, so a popup would just be a redundant overlay.
+    if (!isMobileViewport()) {
+      marker.bindPopup(callbacks.buildPopupContent([...remoteJobs]))
+    }
     marker.on('click', () => callbacks.onMarkerClick([...remoteJobs]))
     marker.addTo(map)
 
