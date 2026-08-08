@@ -10,19 +10,20 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'clear-search'): void
-  (e: 'clear-filter', name: string): void
   (e: 'clear-map-focus'): void
   (e: 'clear-all'): void
 }>()
 
+// Tech-area filters already have their own always-visible, clickable-pill
+// UI (FilterList) that shows every option (active or not) and toggles on
+// a second click -- duplicating just the *active* ones here would be a
+// second, redundant place to look. Same for search: the query is already
+// visible in the search input itself. This bar exists only for state that
+// has nowhere else to be seen: the current Map Focus (see useMapView),
+// plus a single "Clear all" reset covering everything (search, filters,
+// and Map Focus) at once.
 const hasSearch = computed(() => props.searchQuery.trim().length > 0)
-
-const activeFilterNames = computed(() =>
-  Array.from(props.filters.entries())
-    .filter(([, isActive]) => isActive)
-    .map(([name]) => name)
-)
+const hasActiveFilter = computed(() => Array.from(props.filters.values()).some(Boolean))
 
 // Deliberately null for 'area' (the default) -- only deviations from the
 // default map/list relationship are worth calling out here. 'point' and
@@ -34,7 +35,7 @@ const mapFocusPillLabel = computed(() => {
 })
 
 const hasAnyActive = computed(
-  () => hasSearch.value || activeFilterNames.value.length > 0 || mapFocusPillLabel.value !== null
+  () => hasSearch.value || hasActiveFilter.value || mapFocusPillLabel.value !== null
 )
 </script>
 
@@ -45,29 +46,6 @@ const hasAnyActive = computed(
     aria-label="Active filters"
     class="flex flex-wrap items-center gap-1.5 text-xs"
   >
-    <button
-      v-if="hasSearch"
-      type="button"
-      :aria-label="`Clear search: ${props.searchQuery}`"
-      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 bg-(--color-bg-mute) ring-1 ring-inset ring-(--color-divider) hover:opacity-80 cursor-pointer"
-      @click="emit('clear-search')"
-    >
-      <span>&quot;{{ props.searchQuery }}&quot;</span>
-      <span aria-hidden="true">&times;</span>
-    </button>
-
-    <button
-      v-for="name in activeFilterNames"
-      :key="name"
-      type="button"
-      :aria-label="`Clear filter: ${name}`"
-      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 bg-(--color-bg-mute) ring-1 ring-inset ring-(--color-divider) hover:opacity-80 cursor-pointer"
-      @click="emit('clear-filter', name)"
-    >
-      <span>{{ name }}</span>
-      <span aria-hidden="true">&times;</span>
-    </button>
-
     <button
       v-if="mapFocusPillLabel"
       type="button"

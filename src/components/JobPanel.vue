@@ -101,8 +101,6 @@ const jobCountText = computed(() => {
         :search-query="props.searchQuery"
         :map-focus="props.mapFocus"
         :selected-location-name="props.selectedLocationName"
-        @clear-search="emit('update:search-query', '')"
-        @clear-filter="emit('filter:click', $event)"
         @clear-map-focus="emit('follow-map-area')"
         @clear-all="emit('clear-filters')"
       />

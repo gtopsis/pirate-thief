@@ -19,35 +19,18 @@ describe('ActiveFiltersBar', () => {
     expect(wrapper.find('[role="group"]').exists()).toBe(false)
   })
 
-  it('renders a pill for an active search query and emits clear-search', async () => {
+  // Search query and tech-area filters already have their own visible,
+  // clickable UI elsewhere (the search input; FilterList's chips) -- this
+  // bar intentionally does NOT duplicate them, only Map Focus (which has
+  // no other visible indicator) and a single "Clear all" reset.
+  it('shows only the "Clear all" action (no pill) when just search or a filter is active', () => {
     const wrapper = mount(ActiveFiltersBar, {
       props: { ...baseProps, searchQuery: 'engineer' }
     })
 
-    const pill = wrapper.find('[aria-label="Clear search: engineer"]')
-    expect(pill.exists()).toBe(true)
-    expect(pill.text()).toContain('engineer')
-
-    await pill.trigger('click')
-    expect(wrapper.emitted('clear-search')).toHaveLength(1)
-  })
-
-  it('renders a pill per active tech-area filter and emits clear-filter with its name', async () => {
-    const wrapper = mount(ActiveFiltersBar, {
-      props: {
-        ...baseProps,
-        filters: new Map([
-          ['Frontend', true],
-          ['Backend', false]
-        ])
-      }
-    })
-
-    const pill = wrapper.find('[aria-label="Clear filter: Frontend"]')
-    expect(pill.exists()).toBe(true)
-
-    await pill.trigger('click')
-    expect(wrapper.emitted('clear-filter')).toEqual([['Frontend']])
+    expect(wrapper.find('[role="group"]').exists()).toBe(true)
+    expect(wrapper.findAll('button')).toHaveLength(1)
+    expect(wrapper.find('button').text()).toBe('Clear all')
   })
 
   it('does not render a map-focus pill for the default "area" focus', () => {
