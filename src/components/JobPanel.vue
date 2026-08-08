@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Job } from '@/types/types'
+import type { MapFocus } from '@/composables/useMapView'
+import ActiveFiltersBar from '@/components/ActiveFiltersBar.vue'
 import FilterList from '@/components/FilterList.vue'
 import JobList from '@/components/JobList.vue'
 import JobListSkeleton from '@/components/JobListSkeleton.vue'
@@ -17,19 +19,20 @@ const props = withDefaults(
     filters: Map<string, boolean>
     jobCounts: Map<string, number>
     searchQuery: string
-    showAllOnMap: boolean
+    mapFocus: MapFocus
+    selectedLocationName: string | null
     isViewportFilterAvailable: boolean
     highlightedJobId: string | null
     unmappableJobs: readonly Job[]
     remoteJobs: readonly Job[]
     /**
-     * Hides secondary/administrative controls (the viewport-follow
-     * checkbox, the redundant job-count line, and the remote/unmapped
-     * notices), keeping only search + filters + the list itself. Used for
-     * the mobile bottom sheet's "half" (quick-glance) state, where those
-     * pieces would otherwise eat into the little space available for the
-     * list. Defaults to false so the desktop panel (which has no such
-     * space constraint) always shows everything.
+     * Hides secondary/administrative controls (the map-sync toggle, the
+     * redundant job-count line, and the remote/unmapped notices), keeping
+     * only search + filters + the active-filters bar + the list itself.
+     * Used for the mobile bottom sheet's "half" (quick-glance) state,
+     * where those pieces would otherwise eat into the little space
+     * available for the list. Defaults to false so the desktop panel
+     * (which has no such space constraint) always shows everything.
      */
     compact?: boolean
   }>(),
@@ -40,7 +43,8 @@ const emit = defineEmits<{
   (e: 'filter:click', name: string): void
   (e: 'clear-filters'): void
   (e: 'update:search-query', value: string): void
-  (e: 'update:show-all-on-map', value: boolean): void
+  (e: 'follow-map-area'): void
+  (e: 'show-all-jobs'): void
   (e: 'job:select', jobId: string): void
   (e: 'job:hover', jobId: string | null): void
 }>()
@@ -49,9 +53,18 @@ const onSearchInput = (event: Event): void => {
   emit('update:search-query', (event.target as HTMLInputElement).value)
 }
 
+const onSyncToggleChange = (event: Event): void => {
+  const checked = (event.target as HTMLInputElement).checked
+  if (checked) {
+    emit('follow-map-area')
+  } else {
+    emit('show-all-jobs')
+  }
+}
+
 // Only spells out "N of M" when the list is actually narrower than the
-// total matches (i.e. the map viewport is hiding some of them) -- when
-// they're equal, "N of N" adds nothing over just "N jobs".
+// total matches (i.e. the current map focus is hiding some of them) --
+// when they're equal, "N of N" adds nothing over just "N jobs".
 const jobCountText = computed(() => {
   const { length } = props.jobs
   return length === props.totalJobCount
@@ -80,17 +93,31 @@ const jobCountText = computed(() => {
         @filter:click="emit('filter:click', $event)"
       />
 
+      <!-- Always visible (even compact): the single canonical place to see
+           everything currently narrowing the view, and undo any one of
+           them individually or all at once. -->
+      <ActiveFiltersBar
+        :filters="props.filters"
+        :search-query="props.searchQuery"
+        :map-focus="props.mapFocus"
+        :selected-location-name="props.selectedLocationName"
+        @clear-search="emit('update:search-query', '')"
+        @clear-filter="emit('filter:click', $event)"
+        @clear-map-focus="emit('follow-map-area')"
+        @clear-all="emit('clear-filters')"
+      />
+
       <label
         v-if="props.isViewportFilterAvailable && !props.compact"
         class="flex items-center gap-2 text-xs text-(--color-text-2) select-none cursor-pointer"
       >
         <input
           type="checkbox"
-          :checked="props.showAllOnMap"
+          :checked="props.mapFocus !== 'all'"
           class="cursor-pointer"
-          @change="emit('update:show-all-on-map', ($event.target as HTMLInputElement).checked)"
+          @change="onSyncToggleChange"
         />
-        Show all matching jobs (ignore map view)
+        Sync list with map view
       </label>
 
       <p v-if="!props.compact" class="text-xs text-(--color-text-3)">

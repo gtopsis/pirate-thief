@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import HomeView from '@/views/HomeView.vue'
+import JobsMap from '@/components/JobsMap.vue'
 
 const HEADER_ROWS = Array.from({ length: 5 }, () => ['', '', '', '', ''])
 
@@ -48,6 +49,20 @@ const mountHomeView = async (): Promise<VueWrapper> => {
   return wrapper
 }
 
+/**
+ * The list defaults to following the map's current viewport ("area"
+ * focus). In jsdom, the map container has no real size, so Leaflet's
+ * computed bounds are degenerate and exclude every job -- tests that care
+ * about filter/search/notice behavior (not map-viewport math) opt out via
+ * the "Sync list with map view" toggle first, same as a user unchecking
+ * it to see every matching job regardless of pan/zoom.
+ */
+const showAllJobs = async (wrapper: VueWrapper): Promise<void> => {
+  const toggle = wrapper.findAll('input[type="checkbox"]')[0]!
+  await toggle.setValue(false)
+  await flushPromises()
+}
+
 describe('HomeView', () => {
   let wrapper: VueWrapper | undefined
 
@@ -65,6 +80,7 @@ describe('HomeView', () => {
 
   it('mounts without throwing, fetches jobs, and renders the map + job panel', async () => {
     wrapper = await mountHomeView()
+    await showAllJobs(wrapper)
 
     // Job data was fetched and parsed
     expect(window.fetch).toHaveBeenCalled()
@@ -81,6 +97,7 @@ describe('HomeView', () => {
 
   it('filters jobs by search query', async () => {
     wrapper = await mountHomeView()
+    await showAllJobs(wrapper)
 
     const searchInput = wrapper.findAll('input[type="search"]')[0]!
     await searchInput.setValue('Backend')
@@ -132,6 +149,7 @@ describe('HomeView', () => {
     stubJobsResponse([...DEFAULT_JOB_ROWS, unmappableJob])
 
     wrapper = await mountHomeView()
+    await showAllJobs(wrapper)
 
     // Only the unknown/typo'd location counts as unmappable -- REMOTE_JOB
     // is a legitimate remote listing, surfaced separately (see below).
@@ -153,5 +171,43 @@ describe('HomeView', () => {
     expect(wrapper.text()).not.toContain("couldn't be placed on the map")
     // ...but is surfaced via its own notice instead.
     expect(wrapper.text()).toContain('1 remote job shown as a nationwide overlay on the map')
+  })
+
+  it('clicking a marker narrows the list to that location (point focus), revertible via its pill or by panning', async () => {
+    wrapper = await mountHomeView()
+
+    const jobsMap = wrapper.findComponent(JobsMap)
+    const athensJob = {
+      company: 'Acme Corp',
+      title: 'Senior Frontend Engineer',
+      location: 'Athens',
+      techArea: 'Frontend',
+      url: 'https://example.com/job/1'
+    }
+
+    await jobsMap.vm.$emit('marker-click', [athensJob])
+    await flushPromises()
+
+    // Narrowed to just the clicked location...
+    expect(wrapper.text()).toContain('Senior Frontend Engineer')
+    expect(wrapper.text()).not.toContain('Backend Engineer')
+    // ...and surfaced as a removable pill in the active-filters bar.
+    const locationPill = wrapper.find('[aria-label="Reset to the default map view"]')
+    expect(locationPill.exists()).toBe(true)
+    expect(locationPill.text()).toContain('Athens')
+
+    // Clicking the pill reverts to the default (area) focus.
+    await locationPill.trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[aria-label="Reset to the default map view"]').exists()).toBe(false)
+
+    // Re-select the location, then confirm panning the map also reverts it.
+    await jobsMap.vm.$emit('marker-click', [athensJob])
+    await flushPromises()
+    expect(wrapper.find('[aria-label="Reset to the default map view"]').exists()).toBe(true)
+
+    await jobsMap.vm.$emit('bounds-changed', { north: 41, south: 40, east: 23, west: 22 })
+    await flushPromises()
+    expect(wrapper.find('[aria-label="Reset to the default map view"]').exists()).toBe(false)
   })
 })

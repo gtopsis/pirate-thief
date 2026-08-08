@@ -34,14 +34,18 @@ const {
   clearAllFilters
 } = useJobFilters(validJobList)
 
-// === Module 3: map view state (bounds, viewport narrowing, URL sync) ===
+// === Module 3: map view state (bounds, MapFocus, viewport narrowing, URL sync) ===
 const {
-  showAllOnMap,
+  mapFocus,
+  selectedLocationName,
   isViewportFilterAvailable,
   initialMapView,
   panelJobList,
   handleBoundsChanged,
-  handleViewChanged
+  handleViewChanged,
+  selectLocation,
+  showAllJobs,
+  followMapArea
 } = useMapView(filteredJobList)
 
 // === Cross-cutting: job selection (shared between the list and the map) ===
@@ -60,7 +64,8 @@ const jobPanelProps = computed(() => ({
   filters: filters.value,
   jobCounts: jobCounts.value,
   searchQuery: searchQuery.value,
-  showAllOnMap: showAllOnMap.value,
+  mapFocus: mapFocus.value,
+  selectedLocationName: selectedLocationName.value,
   isViewportFilterAvailable: isViewportFilterAvailable.value,
   highlightedJobId: activeJobId.value,
   unmappableJobs: unmappableJobs.value,
@@ -82,11 +87,20 @@ const handleMarkerClick = (jobs: Job[]): void => {
 
   const jobId = getJobId(firstJob)
   activeJobId.value = jobId
+  selectLocation(jobs)
   bottomSheetRef.value?.expand()
   nextTick(() => scrollJobCardIntoView(jobId))
 }
 
 const handleRefresh = (): Promise<void> => refresh()
+
+// Resets search, tech-area filters, and map focus back to their
+// defaults in one action -- powers both the "Clear all" action in the
+// active-filters bar and the empty-state "Clear all filters" button.
+const clearEverything = (): void => {
+  clearAllFilters()
+  followMapArea()
+}
 
 // === Keyboard Navigation ===
 const handleKeydown = (event: KeyboardEvent): void => {
@@ -105,8 +119,8 @@ const handleKeydown = (event: KeyboardEvent): void => {
       jobsMapRef.value?.toggleViewMode()
       break
     case 'escape':
-      if (hasActiveFilters.value || searchQuery.value) {
-        clearAllFilters()
+      if (hasActiveFilters.value || searchQuery.value || mapFocus.value !== 'area') {
+        clearEverything()
       }
       break
   }
@@ -147,9 +161,10 @@ onUnmounted(() => {
         <JobPanel
           v-bind="jobPanelProps"
           @filter:click="toggleFilter"
-          @clear-filters="clearAllFilters"
+          @clear-filters="clearEverything"
           @update:search-query="searchQuery = $event"
-          @update:show-all-on-map="showAllOnMap = $event"
+          @follow-map-area="followMapArea"
+          @show-all-jobs="showAllJobs"
           @job:select="handleJobSelect"
           @job:hover="handleJobHover"
         />
@@ -178,9 +193,10 @@ onUnmounted(() => {
               v-bind="jobPanelProps"
               :compact="!isFull"
               @filter:click="toggleFilter"
-              @clear-filters="clearAllFilters"
+              @clear-filters="clearEverything"
               @update:search-query="searchQuery = $event"
-              @update:show-all-on-map="showAllOnMap = $event"
+              @follow-map-area="followMapArea"
+              @show-all-jobs="showAllJobs"
               @job:select="handleJobSelect"
               @job:hover="handleJobHover"
             />

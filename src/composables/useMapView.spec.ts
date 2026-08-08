@@ -16,33 +16,90 @@ describe('useMapView', () => {
     window.history.replaceState({}, '', '/')
   })
 
-  it('defaults to showing all matching jobs regardless of viewport', () => {
+  it('defaults to "area" focus, but shows every job until a viewport is known', () => {
     const filteredJobList = ref<Job[]>([
       jobAt('Athens', 'https://x/1'),
       jobAt('Thessaloniki', 'https://x/2')
     ])
-    const { panelJobList, showAllOnMap, isViewportFilterAvailable } = useMapView(filteredJobList)
+    const { panelJobList, mapFocus, isViewportFilterAvailable } = useMapView(filteredJobList)
 
-    expect(showAllOnMap.value).toBe(true)
+    expect(mapFocus.value).toBe('area')
     expect(isViewportFilterAvailable.value).toBe(false)
+    // filterJobsByBounds returns everything when bounds are still null.
     expect(panelJobList.value).toHaveLength(2)
   })
 
-  it('narrows panelJobList to the current bounds once showAllOnMap is disabled', () => {
+  it('narrows panelJobList to the current viewport once bounds are known', () => {
     const filteredJobList = ref<Job[]>([
       jobAt('Athens', 'https://x/1'),
       jobAt('Thessaloniki', 'https://x/2')
     ])
-    const { panelJobList, showAllOnMap, handleBoundsChanged, isViewportFilterAvailable } =
+    const { panelJobList, handleBoundsChanged, isViewportFilterAvailable } =
       useMapView(filteredJobList)
 
     // A viewport roughly around Athens only.
     handleBoundsChanged({ north: 38.1, south: 37.9, east: 23.8, west: 23.6 })
+
     expect(isViewportFilterAvailable.value).toBe(true)
-
-    showAllOnMap.value = false
-
     expect(panelJobList.value.map((job) => job.location)).toEqual(['Athens'])
+  })
+
+  it('showAllJobs shows every matching job regardless of the viewport', () => {
+    const filteredJobList = ref<Job[]>([
+      jobAt('Athens', 'https://x/1'),
+      jobAt('Thessaloniki', 'https://x/2')
+    ])
+    const { panelJobList, mapFocus, handleBoundsChanged, showAllJobs } = useMapView(filteredJobList)
+
+    handleBoundsChanged({ north: 38.1, south: 37.9, east: 23.8, west: 23.6 })
+    showAllJobs()
+
+    expect(mapFocus.value).toBe('all')
+    expect(panelJobList.value).toHaveLength(2)
+  })
+
+  it('selectLocation narrows the list to exactly the given jobs (point focus)', () => {
+    const filteredJobList = ref<Job[]>([
+      jobAt('Athens', 'https://x/1'),
+      jobAt('Thessaloniki', 'https://x/2')
+    ])
+    const athensJobs = [filteredJobList.value[0]!]
+    const { panelJobList, mapFocus, selectedLocationName, selectLocation } =
+      useMapView(filteredJobList)
+
+    selectLocation(athensJobs)
+
+    expect(mapFocus.value).toBe('point')
+    expect(selectedLocationName.value).toBe('Athens')
+    expect(panelJobList.value).toEqual(athensJobs)
+  })
+
+  it('reverts point focus back to area as soon as the map moves', () => {
+    const filteredJobList = ref<Job[]>([
+      jobAt('Athens', 'https://x/1'),
+      jobAt('Thessaloniki', 'https://x/2')
+    ])
+    const { mapFocus, selectedLocationName, selectLocation, handleBoundsChanged } =
+      useMapView(filteredJobList)
+
+    selectLocation([filteredJobList.value[0]!])
+    expect(mapFocus.value).toBe('point')
+
+    handleBoundsChanged({ north: 41, south: 40, east: 23, west: 22 })
+
+    expect(mapFocus.value).toBe('area')
+    expect(selectedLocationName.value).toBeNull()
+  })
+
+  it('followMapArea resets from point or all back to the default area focus', () => {
+    const filteredJobList = ref<Job[]>([jobAt('Athens', 'https://x/1')])
+    const { mapFocus, selectLocation, followMapArea } = useMapView(filteredJobList)
+
+    selectLocation(filteredJobList.value)
+    expect(mapFocus.value).toBe('point')
+
+    followMapArea()
+    expect(mapFocus.value).toBe('area')
   })
 
   it('persists the map view to the URL on handleViewChanged', () => {
