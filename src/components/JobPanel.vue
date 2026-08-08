@@ -8,20 +8,33 @@ import RemoteJobsNotice from '@/components/RemoteJobsNotice.vue'
 import UnmappedLocationsNotice from '@/components/UnmappedLocationsNotice.vue'
 import { pluralize } from '@/utils/text'
 
-const props = defineProps<{
-  jobs: readonly Job[]
-  totalJobCount: number
-  isLoading: boolean
-  error: boolean
-  filters: Map<string, boolean>
-  jobCounts: Map<string, number>
-  searchQuery: string
-  showAllOnMap: boolean
-  isViewportFilterAvailable: boolean
-  highlightedJobId: string | null
-  unmappableJobs: readonly Job[]
-  remoteJobs: readonly Job[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    jobs: readonly Job[]
+    totalJobCount: number
+    isLoading: boolean
+    error: boolean
+    filters: Map<string, boolean>
+    jobCounts: Map<string, number>
+    searchQuery: string
+    showAllOnMap: boolean
+    isViewportFilterAvailable: boolean
+    highlightedJobId: string | null
+    unmappableJobs: readonly Job[]
+    remoteJobs: readonly Job[]
+    /**
+     * Hides secondary/administrative controls (the viewport-follow
+     * checkbox, the redundant job-count line, and the remote/unmapped
+     * notices), keeping only search + filters + the list itself. Used for
+     * the mobile bottom sheet's "half" (quick-glance) state, where those
+     * pieces would otherwise eat into the little space available for the
+     * list. Defaults to false so the desktop panel (which has no such
+     * space constraint) always shows everything.
+     */
+    compact?: boolean
+  }>(),
+  { compact: false }
+)
 
 const emit = defineEmits<{
   (e: 'filter:click', name: string): void
@@ -68,7 +81,7 @@ const jobCountText = computed(() => {
       />
 
       <label
-        v-if="props.isViewportFilterAvailable"
+        v-if="props.isViewportFilterAvailable && !props.compact"
         class="flex items-center gap-2 text-xs text-(--color-text-2) select-none cursor-pointer"
       >
         <input
@@ -80,12 +93,14 @@ const jobCountText = computed(() => {
         Show all matching jobs (ignore map view)
       </label>
 
-      <p class="text-xs text-(--color-text-3)">
+      <p v-if="!props.compact" class="text-xs text-(--color-text-3)">
         {{ jobCountText }}
       </p>
 
-      <RemoteJobsNotice :jobs="props.remoteJobs" />
-      <UnmappedLocationsNotice :jobs="props.unmappableJobs" />
+      <template v-if="!props.compact">
+        <RemoteJobsNotice :jobs="props.remoteJobs" />
+        <UnmappedLocationsNotice :jobs="props.unmappableJobs" />
+      </template>
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto px-3 py-3">

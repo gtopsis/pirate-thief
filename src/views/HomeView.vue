@@ -269,17 +269,22 @@ onUnmounted(() => {
           @view-changed="handleViewChanged"
         />
 
-        <!-- Mobile bottom sheet mirrors the same panel -->
+        <!-- Mobile bottom sheet mirrors the same panel. Only the "full"
+             snap state shows every control (see JobPanel's `compact`
+             prop) -- "half" stays focused on search + filters + the list. -->
         <BottomSheet ref="bottomSheetRef" :job-count="panelJobList.length">
-          <JobPanel
-            v-bind="jobPanelProps"
-            @filter:click="toggleFilter"
-            @clear-filters="clearAllFilters"
-            @update:search-query="searchQuery = $event"
-            @update:show-all-on-map="showAllOnMap = $event"
-            @job:select="handleJobSelect"
-            @job:hover="handleJobHover"
-          />
+          <template #default="{ isFull }">
+            <JobPanel
+              v-bind="jobPanelProps"
+              :compact="!isFull"
+              @filter:click="toggleFilter"
+              @clear-filters="clearAllFilters"
+              @update:search-query="searchQuery = $event"
+              @update:show-all-on-map="showAllOnMap = $event"
+              @job:select="handleJobSelect"
+              @job:hover="handleJobHover"
+            />
+          </template>
         </BottomSheet>
       </div>
     </main>

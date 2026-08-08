@@ -28,6 +28,7 @@ const dragStartHeightRatio = ref(0)
 const currentHeightRatio = ref<number>(SNAP_POINTS.collapsed)
 
 const isExpanded = computed(() => snap.value !== 'collapsed')
+const isFull = computed(() => snap.value === 'full')
 
 const updateViewportHeight = (): void => {
   viewportHeight.value = window.innerHeight
@@ -140,8 +141,14 @@ defineExpose({
       </span>
     </button>
 
-    <div class="flex-1 min-h-0">
-      <slot />
+    <!--
+      v-show (not v-if) so the slot content's own state (scroll position,
+      search text, etc.) survives collapsing/expanding -- it's just hidden
+      and non-interactive while collapsed, instead of being clipped to a
+      sliver but still technically focusable/scrollable underneath.
+    -->
+    <div v-show="isExpanded" class="flex-1 min-h-0">
+      <slot :is-full="isFull" />
     </div>
   </div>
 </template>
