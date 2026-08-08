@@ -52,11 +52,36 @@ const ALIAS_ENTRIES: AliasEntry[] = CITY_ENTRIES.flatMap((entry) =>
 
 const NON_MAPPABLE_VALUES = new Set(['greece', 'remote', ''])
 
+// A location that (after resolving its segments, see splitLocationSegments)
+// carries no specific place info -- just naming the whole country -- means
+// the same thing as an explicit "Remote": the job could be worked from
+// anywhere in Greece. "remote" itself doesn't need to be listed here since
+// REMOTE_KEYWORD already matches it.
+const REMOTE_EQUIVALENT_VALUES = new Set(['greece'])
+
 // Matches "remote" as a standalone word (normalized input has no
 // punctuation, so word boundaries fall on spaces/string edges), catching
 // phrasing like "Remote", "Remote, Greece", "Fully Remote" -- but see
 // isRemoteLocation below for how this combines with city resolution.
 const REMOTE_KEYWORD = /(^| )remote( |$)/
+
+/**
+ * Splits a free-text location on commas into trimmed, non-empty segments,
+ * e.g. "Kifisia, Attica, Greece" -> ["Kifisia", "Attica", "Greece"].
+ * Real-world addresses are conventionally written most-specific-first
+ * (city, region, country), so callers try segments in this order and stop
+ * at the first one that resolves. Falls back to the whole string as a
+ * single segment when there's nothing to split (no commas, or a
+ * whitespace/comma-only string), preserving prior behavior for the
+ * common single-value case.
+ */
+const splitLocationSegments = (location: string): string[] => {
+  const segments = location
+    .split(',')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+  return segments.length > 0 ? segments : [location]
+}
 
 const findExactMatch = (normalizedInput: string): CityEntry | null => {
   for (const { alias, entry } of ALIAS_ENTRIES) {
@@ -145,20 +170,32 @@ const coordsCache = new Map<string, [number, number] | null>()
 
 /**
  * Resolve a free-text location string to known coordinates.
- * Returns null for locations we can't place on the map (e.g. "Remote", "Greece",
- * or anything that doesn't resolve via exact or fuzzy matching).
+ * Comma-separated locations (e.g. "Kifisia, Attica, Greece") are checked
+ * segment by segment, left to right (most-specific-first, matching how
+ * addresses are conventionally written) -- the first segment that
+ * resolves to a known city wins. Returns null for locations we can't
+ * place on the map (e.g. "Remote", "Greece", or anything that doesn't
+ * resolve via exact or fuzzy matching in any segment).
  */
 export const getCoordsForLocation = (location: string): [number, number] | null => {
   if (coordsCache.has(location)) {
     return coordsCache.get(location)!
   }
 
-  const normalized = normalizeLocation(location)
   let result: [number, number] | null = null
 
-  if (!NON_MAPPABLE_VALUES.has(normalized)) {
+  for (const segment of splitLocationSegments(location)) {
+    const normalized = normalizeLocation(segment)
+    // Segments that carry no place info on their own (e.g. a trailing
+    // "Greece") are skipped so a more specific segment can still match --
+    // they don't force the whole location to be unmappable.
+    if (NON_MAPPABLE_VALUES.has(normalized)) continue
+
     const entry = findExactMatch(normalized) ?? findFuzzyMatch(normalized)
-    result = entry ? entry.coords : null
+    if (entry) {
+      result = entry.coords
+      break
+    }
   }
 
   coordsCache.set(location, result)
@@ -178,15 +215,26 @@ export const isJobMappable = (job: Job): boolean => getJobCoords(job) !== null
 
 /**
  * Whether a location string represents a remote listing rather than a
- * genuinely unresolvable/mistyped place. A location only counts as
- * "remote" when it contains the word "remote" *and* doesn't otherwise
- * resolve to a known city -- so hybrid listings like "Athens (Remote)"
- * are still treated as Athens jobs, and only location-less remote ads
- * (e.g. "Remote", "Remote, Greece", "Fully Remote") are flagged here.
+ * genuinely unresolvable/mistyped place. A location counts as "remote"
+ * when it doesn't resolve to a known city, and every one of its
+ * comma-separated segments is either the word "remote" or a bare mention
+ * of the country ("Greece") -- i.e. it carries no specific place info at
+ * all. This means:
+ *  - "Remote", "Remote, Greece", "Fully Remote", "Greece" are all remote.
+ *  - Hybrid listings like "Athens (Remote)" or "Remote, Athens" are still
+ *    treated as Athens jobs, since a real city resolves first.
+ *  - "Kifisia, Attica, Greece" is NOT remote just because it ends in
+ *    "Greece" -- "Kifisia"/"Attica" are specific (if unresolved) place
+ *    names, not remote/country placeholders, so this stays a genuine
+ *    unmappable/data-issue job instead of being silently reclassified.
  */
 export const isRemoteLocation = (location: string): boolean => {
-  const normalized = normalizeLocation(location)
-  return REMOTE_KEYWORD.test(normalized) && getCoordsForLocation(location) === null
+  if (getCoordsForLocation(location) !== null) return false
+
+  return splitLocationSegments(location).every((segment) => {
+    const normalized = normalizeLocation(segment)
+    return REMOTE_KEYWORD.test(normalized) || REMOTE_EQUIVALENT_VALUES.has(normalized)
+  })
 }
 
 /**

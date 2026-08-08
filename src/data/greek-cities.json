@@ -36,6 +36,7 @@
     "aliases": ["ag paraskevi", "agia paraskevi"]
   },
   { "canonical": "Marousi", "coords": [38.0492, 23.8069], "aliases": ["marousi"] },
+  { "canonical": "Kifisia", "coords": [38.0741, 23.8074], "aliases": ["kifisia", "kifissia"] },
   { "canonical": "Nea Smyrni", "coords": [37.9351, 23.6963], "aliases": ["nea smyrni"] },
   { "canonical": "Pyrgos", "coords": [37.6695, 21.4421], "aliases": ["pyrgos"] },
   { "canonical": "Kozani", "coords": [40.3006, 21.7886], "aliases": ["kozani"] },
