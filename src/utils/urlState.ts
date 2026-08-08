@@ -84,9 +84,20 @@ export interface UrlMapView {
  */
 export const getMapViewFromUrl = (): UrlMapView | null => {
   const params = readUrlParams()
-  const lat = Number(params.get(MAP_LAT_PARAM))
-  const lng = Number(params.get(MAP_LNG_PARAM))
-  const zoom = Number(params.get(MAP_ZOOM_PARAM))
+  const rawLat = params.get(MAP_LAT_PARAM)
+  const rawLng = params.get(MAP_LNG_PARAM)
+  const rawZoom = params.get(MAP_ZOOM_PARAM)
+
+  // Distinct from "present but not a valid number" below: a param that's
+  // simply absent (e.g. a first-ever visit) must not silently become 0 --
+  // `Number(null)` is 0, which is finite, so without this check a missing
+  // param set would be mistaken for a genuine "centered at [0, 0], zoom 0"
+  // view instead of "no persisted view at all".
+  if (rawLat === null || rawLng === null || rawZoom === null) return null
+
+  const lat = Number(rawLat)
+  const lng = Number(rawLng)
+  const zoom = Number(rawZoom)
 
   if ([lat, lng, zoom].some((value) => !Number.isFinite(value))) return null
 
