@@ -20,7 +20,20 @@ const props = defineProps<{
 }>()
 
 const snap = ref<SnapPoint>('collapsed')
-const viewportHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 800)
+
+/**
+ * The Visual Viewport API tracks the *currently visible* viewport height,
+ * shrinking/growing as the mobile browser's address bar/toolbar
+ * shows/hides -- unlike `window.innerHeight`, which stays pinned to the
+ * largest possible viewport. Falls back to `window.innerHeight` where
+ * unsupported. This must match what the sheet's height is styled with
+ * (`dvh`, see the template) so a drag ratio computed here always maps to
+ * a height that's actually reachable on screen.
+ */
+const getViewportHeight = (): number =>
+  typeof window !== 'undefined' ? (window.visualViewport?.height ?? window.innerHeight) : 800
+
+const viewportHeight = ref(getViewportHeight())
 const isDragging = ref(false)
 const hasDraggedPastThreshold = ref(false)
 const dragStartY = ref(0)
@@ -31,7 +44,7 @@ const isExpanded = computed(() => snap.value !== 'collapsed')
 const isFull = computed(() => snap.value === 'full')
 
 const updateViewportHeight = (): void => {
-  viewportHeight.value = window.innerHeight
+  viewportHeight.value = getViewportHeight()
 }
 
 const setSnap = (point: SnapPoint): void => {
@@ -105,10 +118,12 @@ const onPointerUp = (): void => {
 
 onMounted(() => {
   window.addEventListener('resize', updateViewportHeight)
+  window.visualViewport?.addEventListener('resize', updateViewportHeight)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateViewportHeight)
+  window.visualViewport?.removeEventListener('resize', updateViewportHeight)
 })
 
 defineExpose({
@@ -121,7 +136,7 @@ defineExpose({
   <div
     class="md:hidden fixed inset-x-0 bottom-0 z-[1000] flex flex-col rounded-t-2xl bg-(--color-bg) shadow-[0_-4px_20px_rgba(0,0,0,0.25)]"
     :class="{ 'transition-[height] duration-300 ease-out': !isDragging }"
-    :style="{ height: `${currentHeightRatio * 100}vh` }"
+    :style="{ height: `${currentHeightRatio * 100}dvh` }"
   >
     <button
       type="button"
