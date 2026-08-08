@@ -16,7 +16,7 @@ const emit = defineEmits<{
     :disabled="count === 0"
     :aria-pressed="active"
     :title="count === 0 ? `No jobs available for ${name}` : `Filter by ${name}`"
-    class="grid select-none items-center whitespace-nowrap rounded-lg py-1.5 px-3 text-xs font-bold uppercase shadow-xs ring-1 ring-inset ring-gray-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+    class="grid select-none items-center whitespace-nowrap rounded-lg py-1 px-2.5 text-xs font-bold uppercase shadow-xs ring-1 ring-inset ring-gray-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
     :class="active ? 'bg-(--vt-c-blue-dark) text-white' : 'bg-(--vt-c-black-soft) text-white'"
     @click="emit('click')"
   >
