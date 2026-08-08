@@ -1,8 +1,8 @@
-# pirate-thief
+# Greek Tech Jobs Map
 
 ### Job listing app (source: [Startup Pirate](https://docs.google.com/spreadsheets/d/1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ/edit?gid=0#gid=0)).
 
-Pirate Thief is a small job listing app which "steals" the published job ads of the Startup Pirate (startuppirate.gr), and display them through an intuitive UI.
+Greek Tech Jobs Map is a small job listing app which "steals" the published job ads of the Startup Pirate (startuppirate.gr), and display them through an intuitive UI.
 
 It could be characterized as a scraper which parses an online and public google spreadsheed, aggregates and showcase the list of job ads in an intuitive way.
 
@@ -10,7 +10,7 @@ It could be characterized as a scraper which parses an online and public google 
 
 <br>
 
-<img src="./pirate-thief-screenshot.png" alt="Screenshot of pirate-thief app" width="800" height="auto" style="display: block; margin: 0 auto;">
+<img src="./pirate-thief-screenshot.png" alt="Screenshot of Greek Tech Jobs Map app" width="800" height="auto" style="display: block; margin: 0 auto;">
 
 <br>
 

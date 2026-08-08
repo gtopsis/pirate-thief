@@ -5,4 +5,9 @@ const range = import.meta.env.VITE_GOOGLE_SPREADSHEET_API_RANGE
 export const jobsListUrl =
   'https://docs.google.com/spreadsheets/d/1s8XLKx-D23jEBM-LifstRFWX2Zj6Lv98twNxObHeXjQ/edit?gid=2008238165#gid=2008238165'
 
+// The public job list this app aggregates its data from -- shared so the
+// branding (AppHero) and the "Fetched X ago" freshness indicator
+// (useLastUpdatedText) both credit the same source name consistently.
+export const jobsSourceName = 'Startup Pirate'
+
 export const jobsListApiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`
