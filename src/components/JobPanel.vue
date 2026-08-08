@@ -42,13 +42,13 @@ const props = withDefaults(
      */
     showJobCountText?: boolean
     /**
-     * Hides secondary/administrative controls (the map-sync toggle, and
-     * the remote/unmapped notices), keeping only search + filters + the
-     * active-filters bar + the list itself. Used for the mobile bottom
-     * sheet's "half" (quick-glance) state, where those pieces would
-     * otherwise eat into the little space available for the list.
-     * Defaults to false so the desktop panel (which has no such space
-     * constraint) always shows everything.
+     * Hides secondary/administrative controls (the job-count text and the
+     * remote/unmapped notices), keeping only the sync-with-map toggle,
+     * search, filters, and the active-filters bar + the list itself.
+     * Used for the mobile bottom sheet's "half" (quick-glance) state,
+     * where those pieces would otherwise eat into the little space
+     * available for the list. Defaults to false so the desktop panel
+     * (which has no such space constraint) always shows everything.
      */
     compact?: boolean
   }>(),
@@ -82,6 +82,24 @@ const onSyncToggleChange = (event: Event): void => {
 <template>
   <div class="flex flex-col h-full">
     <div class="shrink-0 flex flex-col gap-2 px-3 pt-3 pb-2 border-b border-(--color-divider)">
+      <!-- 1st: establishes the scope everything below operates within
+           (synced to the current map view, or every matching job
+           regardless of pan/zoom) -- shown even when compact, since it's
+           foundational rather than secondary. -->
+      <label
+        v-if="props.isViewportFilterAvailable"
+        class="flex items-center gap-2 text-xs text-(--color-text-2) select-none cursor-pointer"
+      >
+        <input
+          type="checkbox"
+          :checked="props.mapFocus !== 'all'"
+          class="cursor-pointer"
+          @change="onSyncToggleChange"
+        />
+        Sync list with map view
+      </label>
+
+      <!-- 2nd: search -->
       <label class="relative block">
         <span class="sr-only">Search jobs by title, company or location</span>
         <input
@@ -93,15 +111,19 @@ const onSyncToggleChange = (event: Event): void => {
         />
       </label>
 
+      <!-- 3rd: filters -->
       <FilterList
         :filters="props.filters"
         :job-counts="props.jobCounts"
         @filter:click="emit('filter:click', $event)"
       />
 
-      <!-- Always visible (even compact): the single canonical place to see
-           everything currently narrowing the view, and undo any one of
-           them individually or all at once. -->
+      <!-- 4th: textual content derived from all of the above (sync/map
+           focus, search, filters) -- what's currently narrowing the view,
+           a way to undo any one of them (or all at once), and how many
+           jobs that leaves. Always visible (even compact): the single
+           canonical place to see this, so it can't disagree with the
+           actual search/filter/sync state shown above it. -->
       <ActiveFiltersBar
         :filters="props.filters"
         :search-query="props.searchQuery"
@@ -110,19 +132,6 @@ const onSyncToggleChange = (event: Event): void => {
         @clear-map-focus="emit('follow-map-area')"
         @clear-all="emit('clear-filters')"
       />
-
-      <label
-        v-if="props.isViewportFilterAvailable && !props.compact"
-        class="flex items-center gap-2 text-xs text-(--color-text-2) select-none cursor-pointer"
-      >
-        <input
-          type="checkbox"
-          :checked="props.mapFocus !== 'all'"
-          class="cursor-pointer"
-          @change="onSyncToggleChange"
-        />
-        Sync list with map view
-      </label>
 
       <p
         v-if="!props.compact && props.showJobCountText"
