@@ -1,6 +1,6 @@
 import { type Ref, ref, shallowRef, toValue } from 'vue'
 
-export const useFetch = <T>(url: string | Ref<string>) => {
+export const useFetch = <T = unknown>(url: string | Ref<string>) => {
   const isLoading = ref(false)
   const error = shallowRef<Error | null>(null)
   const data: Ref<T | null> = ref(null)

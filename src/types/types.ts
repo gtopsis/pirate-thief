@@ -5,9 +5,3 @@ export interface Job {
   techArea: string
   url: string
 }
-
-export interface SpreadSheetResponse {
-  majorDimension: string
-  range: string
-  values: string[][]
-}

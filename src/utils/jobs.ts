@@ -1,36 +1,4 @@
-import type { Job, SpreadSheetResponse } from '@/types/types'
-
-// === Constants ===
-export const NUMBER_OF_HEADER_ROWS = 5
-export const NUMBER_OF_JOB_DETAILS = 5
-
-/**
- * Map a raw spreadsheet row to a Job.
- */
-const rowToJob = (row: string[]): Job => ({
-  company: row[0]!,
-  title: row[1]!,
-  location: row[2]!,
-  techArea: row[3]!,
-  url: row[4]!
-})
-
-/**
- * Parse raw spreadsheet response into valid Job array
- */
-export const parseJobs = (data: SpreadSheetResponse | null): Job[] => {
-  const values = data?.values
-  if (!values) return []
-
-  const jobs: Job[] = []
-  for (let i = NUMBER_OF_HEADER_ROWS; i < values.length; i++) {
-    const row = values[i]
-    if (row && row.length === NUMBER_OF_JOB_DETAILS) {
-      jobs.push(rowToJob(row))
-    }
-  }
-  return jobs
-}
+import type { Job } from '@/types/types'
 
 /**
  * Build a Set of active filter names from a filters Map
