@@ -21,6 +21,14 @@ const NEO_HERAKLIO_ATHENS_SUBURB: [number, number] = [38.0427, 23.7673]
 const AG_PARASKEVI: [number, number] = [38.0167, 23.8333]
 const KIFISIA: [number, number] = [38.0744, 23.8111]
 
+const jobAt = (location: string): Job => ({
+  company: 'Acme',
+  title: 'Engineer',
+  location,
+  techArea: 'Backend',
+  url: 'https://x'
+})
+
 describe('getCoordsForLocation', () => {
   it.each<[string, [number, number]]>([
     ['Athens', ATHENS],
@@ -128,14 +136,6 @@ describe('isRemoteLocation', () => {
 })
 
 describe('getUnmappableJobs', () => {
-  const jobAt = (location: string): Job => ({
-    company: 'Acme',
-    title: 'Engineer',
-    location,
-    techArea: 'Backend',
-    url: 'https://x'
-  })
-
   it('returns only jobs whose location could not be geocoded and are not remote listings', () => {
     const jobs = [
       jobAt('Athens'),
@@ -157,14 +157,6 @@ describe('getUnmappableJobs', () => {
 })
 
 describe('getRemoteJobs', () => {
-  const jobAt = (location: string): Job => ({
-    company: 'Acme',
-    title: 'Engineer',
-    location,
-    techArea: 'Backend',
-    url: 'https://x'
-  })
-
   it('returns only remote job listings', () => {
     const jobs = [
       jobAt('Athens'),

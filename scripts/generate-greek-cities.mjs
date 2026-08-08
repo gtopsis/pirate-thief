@@ -13,10 +13,8 @@
 //
 // For each name in CURATED_PLACE_GROUPS, every GeoNames row whose
 // asciiname/name/alternate-name (exactly, case-insensitively) matches is
-// treated as a candidate; the highest-population candidate wins (this
-// naturally disambiguates e.g. "Crete" the island/region/admin-area
-// having multiple GeoNames rows, and correctly prefers Heraklion, Crete
-// -- pop ~137k -- over a much smaller, similarly-named Athens suburb).
+// treated as a candidate; see resolvePlaceName() for how the single best
+// candidate is then picked.
 //
 // Re-run with `pnpm generate:greek-cities` after editing the list below.
 
@@ -27,16 +25,18 @@ import { fileURLToPath } from 'node:url'
 import extract from 'extract-zip'
 
 const GEONAMES_URL = 'https://download.geonames.org/export/dump/GR.zip'
-const LATIN_ONLY = /^[A-Za-z0-9 .\-']+$/
-// See the MIN_ALIAS_LENGTH comment below for why this is needed.
-const MIN_ALIAS_LENGTH = 4
+const OUTPUT_PATH = fileURLToPath(new URL('../src/data/greek-cities.json', import.meta.url))
 
-const normalizeName = (input) =>
-  input
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
+const LATIN_ONLY = /^[A-Za-z0-9 .\-']+$/
+// GeoNames' alternate-name lists include short abbreviations and
+// IATA/UN-LOCODE-style airport codes (e.g. "her", "skg", "mjt") that are
+// too short to safely substring-match: geo.ts resolves exact matches by
+// checking whether the (space-normalized) input *contains* an alias, so
+// a 3-letter code can accidentally match inside an unrelated word (e.g.
+// "her", Heraklion's code, inside "somewhere"). Aliases shorter than
+// this are dropped; the search term itself is always kept regardless of
+// its length (see resolvePlaceName).
+const MIN_ALIAS_LENGTH = 4
 
 // prettier-ignore
 const CURATED_PLACE_GROUPS = [
@@ -131,30 +131,58 @@ const EXTRA_ALIASES = new Map([
   ]
 ])
 
-const dataDir = fileURLToPath(new URL('../src/data/', import.meta.url))
-const outputPath = join(dataDir, 'greek-cities.json')
+/**
+ * @typedef {Object} GeonameRow
+ * @property {number} population
+ * @property {string} name
+ * @property {string} asciiName
+ * @property {number} lat
+ * @property {number} lng
+ * @property {string[]} altNames
+ * @property {string} featureClass
+ * @property {string} featureCode
+ * @property {string} admin1
+ * @property {string} admin2
+ */
 
-const tmpDir = mkdtempSync(join(tmpdir(), 'geonames-gr-'))
+/**
+ * @typedef {Object} CityEntry
+ * @property {string} canonical
+ * @property {[number, number]} coords
+ * @property {string[]} aliases
+ * @property {true} fuzzy
+ */
 
-try {
+const normalizeName = (input) =>
+  input
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
+/** Downloads and unzips GeoNames' GR.zip into tmpDir, returning GR.txt's raw contents. */
+const downloadGeonamesData = async (tmpDir) => {
   console.log('Downloading GeoNames GR.zip...')
   const response = await fetch(GEONAMES_URL)
   if (!response.ok) {
     throw new Error(`Failed to download GeoNames data: ${response.status}`)
   }
+
   const zipPath = join(tmpDir, 'GR.zip')
   writeFileSync(zipPath, Buffer.from(await response.arrayBuffer()))
-
   await extract(zipPath, { dir: tmpDir })
 
-  const raw = readFileSync(join(tmpDir, 'GR.txt'), 'utf-8')
-  const lines = raw.split('\n').filter(Boolean)
+  return readFileSync(join(tmpDir, 'GR.txt'), 'utf-8')
+}
 
-  /** @typedef {{ population: number, name: string, asciiName: string, lat: number, lng: number, altNames: string[], featureClass: string, featureCode: string, admin1: string, admin2: string }} GeonameRow */
-
+/** Parses GeoNames' tab-separated dump format into GeonameRow objects. */
+const parseGeonamesRows = (raw) => {
   /** @type {GeonameRow[]} */
   const rows = []
-  for (const line of lines) {
+
+  for (const line of raw.split('\n')) {
+    if (!line) continue
+
     const cols = line.split('\t')
     if (cols.length < 15) continue
 
@@ -188,108 +216,108 @@ try {
     })
   }
 
-  /** @typedef {{ canonical: string, coords: [number, number], aliases: string[], fuzzy: true }} CityEntry */
+  return rows
+}
 
-  /** @type {CityEntry[]} */
-  const entries = []
-  const notFound = []
+/** Every row whose name/asciiname/alternate-name exactly matches (case/accent-insensitively). */
+const findCandidateRows = (rows, normalizedTarget) =>
+  rows.filter((row) =>
+    [row.name, row.asciiName, ...row.altNames].some((n) => normalizeName(n) === normalizedTarget)
+  )
 
-  for (const { adminFilter, names } of CURATED_PLACE_GROUPS) {
-    for (const placeName of names) {
-      const normalizedTarget = normalizeName(placeName)
+/**
+ * Narrows candidates down to the given admin area (e.g. Attica or
+ * Thessaloniki), if one is specified -- several district names (e.g.
+ * "Panorama", "Toumba") are common toponyms that also match small,
+ * unrelated villages elsewhere in Greece. Falls back to the unrestricted
+ * candidate list if none match (or no admin area was specified).
+ */
+const scopeToAdminArea = (candidates, adminFilter) => {
+  if (!adminFilter) return candidates
 
-      const candidates = rows.filter((row) => {
-        const candidateNames = [row.name, row.asciiName, ...row.altNames]
-        return candidateNames.some((n) => normalizeName(n) === normalizedTarget)
-      })
+  const inAdminArea = candidates.filter(
+    (row) =>
+      row.admin1 === adminFilter.admin1 &&
+      (!adminFilter.admin2 || row.admin2 === adminFilter.admin2)
+  )
+  return inAdminArea.length > 0 ? inAdminArea : candidates
+}
 
-      if (candidates.length === 0) {
-        notFound.push(placeName)
-        continue
-      }
+/**
+ * Picks the single best candidate row for a curated place name out of
+ * everything findCandidateRows()/scopeToAdminArea() left standing.
+ */
+const pickBestRow = (candidates) => {
+  // Prefer an actual populated place ("P") over a broader island/region/
+  // admin-area row sharing the same name -- e.g. "Mytilene" should
+  // resolve to the town (pop ~28k), not the whole island of Lesbos (pop
+  // ~84k) just because it happens to have a bigger population figure.
+  // Falls back to any feature class for names that only exist as an
+  // island/region (e.g. Crete, Peloponnese).
+  const populatedPlaces = candidates.filter((row) => row.featureClass === 'P')
+  const pool = populatedPlaces.length > 0 ? populatedPlaces : candidates
 
-      // Prefer candidates within the expected admin area (e.g. Attica or
-      // Thessaloniki) when one is specified for this group -- several
-      // district names (e.g. "Panorama", "Toumba") are common toponyms
-      // that also match small, unrelated villages elsewhere in Greece.
-      // Falls back to the unrestricted candidate pool if none match.
-      const inAdminArea = adminFilter
-        ? candidates.filter(
-            (row) =>
-              row.admin1 === adminFilter.admin1 &&
-              (!adminFilter.admin2 || row.admin2 === adminFilter.admin2)
-          )
-        : candidates
-      const scoped = inAdminArea.length > 0 ? inAdminArea : candidates
+  return pool.reduce((a, b) => {
+    if (b.population !== a.population) return b.population > a.population ? b : a
 
-      // Prefer an actual populated place ("P") over a broader island/
-      // region/admin-area row sharing the same name -- e.g. "Mytilene"
-      // should resolve to the town (pop ~28k), not the whole island of
-      // Lesbos (pop ~84k) just because it happens to have a bigger
-      // population figure. Falls back to the highest-population
-      // candidate of any class for names that only exist as an
-      // island/region (e.g. Crete, Peloponnese).
-      const populatedPlaces = scoped.filter((row) => row.featureClass === 'P')
-      const pool = populatedPlaces.length > 0 ? populatedPlaces : scoped
-      const best = pool.reduce((a, b) => {
-        if (b.population !== a.population) return b.population > a.population ? b : a
-        // Population is tied (often 0-vs-0 for small suburbs GeoNames
-        // doesn't track separately) -- prefer a feature code that
-        // explicitly marks "part of a populated place" (e.g. PPLX) over
-        // a bare PPL, which is more likely to be an unrelated, similarly
-        // named village that happened to share an admin area by chance.
-        const bIsPartOfCity = b.featureCode !== 'PPL'
-        const aIsPartOfCity = a.featureCode !== 'PPL'
-        if (bIsPartOfCity !== aIsPartOfCity) return bIsPartOfCity ? b : a
-        return a
-      })
+    // Population is tied (often 0-vs-0 for small suburbs GeoNames
+    // doesn't track separately) -- prefer a feature code that explicitly
+    // marks "part of a populated place" (e.g. PPLX) over a bare PPL,
+    // which is more likely to be an unrelated, similarly named village
+    // that happened to share an admin area by chance.
+    const bIsPartOfCity = b.featureCode !== 'PPL'
+    const aIsPartOfCity = a.featureCode !== 'PPL'
+    return bIsPartOfCity !== aIsPartOfCity ? (bIsPartOfCity ? b : a) : a
+  })
+}
 
-      const aliasSet = new Set()
-      for (const candidate of [best.asciiName, best.name, ...best.altNames]) {
-        const trimmed = candidate.trim()
-        // GeoNames' alternate-name lists include short abbreviations and
-        // IATA/UN-LOCODE-style airport codes (e.g. "her", "skg", "mjt")
-        // that are too short to safely substring-match: geo.ts resolves
-        // exact matches by checking whether the (space-normalized) input
-        // *contains* an alias, so a 3-letter code can accidentally match
-        // inside an unrelated word (e.g. "her" inside "somewhere").
-        // MIN_ALIAS_LENGTH filters these out; the search term itself is
-        // still always included below regardless of its length.
-        if (trimmed && trimmed.length >= MIN_ALIAS_LENGTH && LATIN_ONLY.test(trimmed)) {
-          aliasSet.add(trimmed.toLowerCase())
-        }
-      }
-      // Always include the search term itself, in case none of GeoNames'
-      // own spellings happened to exactly match it (e.g. abbreviations).
-      aliasSet.add(normalizedTarget)
+/** Builds the deduped, filtered, lowercased alias list for a resolved row. */
+const buildAliases = (row, normalizedTarget, canonical) => {
+  const aliases = new Set()
 
-      const canonical = best.asciiName.trim()
-      for (const extra of EXTRA_ALIASES.get(canonical) ?? []) {
-        aliasSet.add(normalizeName(extra))
-      }
-
-      entries.push({
-        canonical,
-        coords: [Number(best.lat.toFixed(4)), Number(best.lng.toFixed(4))],
-        aliases: Array.from(aliasSet).sort(),
-        // Every place in this curated list is, by construction, a
-        // major/well-known name -- so typo-tolerant fuzzy matching is
-        // safe to enable across the board (unlike the earlier
-        // ~2,265-place dataset, where it had to be restricted to a
-        // population threshold to avoid false positives against obscure
-        // village names).
-        fuzzy: true
-      })
+  for (const candidate of [row.asciiName, row.name, ...row.altNames]) {
+    const trimmed = candidate.trim()
+    if (trimmed && trimmed.length >= MIN_ALIAS_LENGTH && LATIN_ONLY.test(trimmed)) {
+      aliases.add(trimmed.toLowerCase())
     }
   }
 
-  const totalNames = CURATED_PLACE_GROUPS.reduce((sum, g) => sum + g.names.length, 0)
+  // Always include the search term itself, in case none of GeoNames' own
+  // spellings happened to exactly match it (e.g. abbreviations) -- kept
+  // regardless of length, unlike the GeoNames-derived aliases above.
+  aliases.add(normalizedTarget)
 
-  if (notFound.length > 0) {
-    console.warn(`\nCould not find a GeoNames match for: ${notFound.join(', ')}`)
+  for (const extra of EXTRA_ALIASES.get(canonical) ?? []) {
+    aliases.add(normalizeName(extra))
   }
 
-  // Resolve the known bare-alias ambiguities documented above.
+  return Array.from(aliases).sort()
+}
+
+/** Resolves a single curated place name to a CityEntry, given the full GeoNames row list. */
+const resolvePlaceName = (rows, placeName, adminFilter) => {
+  const normalizedTarget = normalizeName(placeName)
+  const candidates = findCandidateRows(rows, normalizedTarget)
+  if (candidates.length === 0) return null
+
+  const best = pickBestRow(scopeToAdminArea(candidates, adminFilter))
+  const canonical = best.asciiName.trim()
+
+  return {
+    canonical,
+    coords: [Number(best.lat.toFixed(4)), Number(best.lng.toFixed(4))],
+    aliases: buildAliases(best, normalizedTarget, canonical),
+    // Every place in this curated list is, by construction, a
+    // major/well-known name -- so typo-tolerant fuzzy matching is safe
+    // to enable across the board (unlike the earlier ~2,265-place
+    // dataset, where it had to be restricted to a population threshold
+    // to avoid false positives against obscure village names).
+    fuzzy: true
+  }
+}
+
+/** Strips the known-ambiguous aliases (see the constants above) from every entry in place. */
+const resolveAliasAmbiguities = (entries) => {
   for (const entry of entries) {
     entry.aliases = entry.aliases.filter((alias) => {
       if (AMBIGUOUS_ALIASES_TO_DROP.has(alias)) return false
@@ -297,9 +325,10 @@ try {
       return !owner || owner === entry.canonical
     })
   }
+}
 
-  // Surface any *other* collisions this curated list introduces, so they
-  // can be reviewed and added to AMBIGUOUS_ALIAS_OWNERS if needed.
+/** Logs any alias shared by more than one entry, so it can be reviewed and resolved above. */
+const reportAliasCollisions = (entries) => {
   const ownersByAlias = new Map()
   for (const entry of entries) {
     for (const alias of entry.aliases) {
@@ -307,18 +336,56 @@ try {
       ownersByAlias.get(alias).push(entry.canonical)
     }
   }
+
   const collisions = Array.from(ownersByAlias.entries()).filter(([, owners]) => owners.length > 1)
-  if (collisions.length > 0) {
-    console.warn(`\n${collisions.length} alias(es) shared by more than one curated place:`)
-    for (const [alias, owners] of collisions) {
-      console.warn(`  "${alias}": ${owners.join(', ')}`)
-    }
+  if (collisions.length === 0) return
+
+  console.warn(`\n${collisions.length} alias(es) shared by more than one curated place:`)
+  for (const [alias, owners] of collisions) {
+    console.warn(`  "${alias}": ${owners.join(', ')}`)
   }
-
-  entries.sort((a, b) => a.canonical.localeCompare(b.canonical))
-
-  writeFileSync(outputPath, JSON.stringify(entries) + '\n')
-  console.log(`\nWrote ${entries.length} of ${totalNames} curated place entries to ${outputPath}`)
-} finally {
-  rmSync(tmpDir, { recursive: true, force: true })
 }
+
+const main = async () => {
+  const tmpDir = mkdtempSync(join(tmpdir(), 'geonames-gr-'))
+
+  try {
+    const raw = await downloadGeonamesData(tmpDir)
+    const rows = parseGeonamesRows(raw)
+
+    /** @type {CityEntry[]} */
+    const entries = []
+    const notFound = []
+
+    for (const { adminFilter, names } of CURATED_PLACE_GROUPS) {
+      for (const placeName of names) {
+        const entry = resolvePlaceName(rows, placeName, adminFilter)
+        if (entry) {
+          entries.push(entry)
+        } else {
+          notFound.push(placeName)
+        }
+      }
+    }
+
+    if (notFound.length > 0) {
+      console.warn(`\nCould not find a GeoNames match for: ${notFound.join(', ')}`)
+    }
+
+    resolveAliasAmbiguities(entries)
+    reportAliasCollisions(entries)
+
+    entries.sort((a, b) => a.canonical.localeCompare(b.canonical))
+
+    writeFileSync(OUTPUT_PATH, JSON.stringify(entries) + '\n')
+
+    const totalNames = CURATED_PLACE_GROUPS.reduce((sum, g) => sum + g.names.length, 0)
+    console.log(
+      `\nWrote ${entries.length} of ${totalNames} curated place entries to ${OUTPUT_PATH}`
+    )
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true })
+  }
+}
+
+await main()
