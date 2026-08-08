@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Job } from '@/types/types'
 import FilterList from '@/components/FilterList.vue'
 import JobList from '@/components/JobList.vue'
 import JobListSkeleton from '@/components/JobListSkeleton.vue'
 import RemoteJobsNotice from '@/components/RemoteJobsNotice.vue'
 import UnmappedLocationsNotice from '@/components/UnmappedLocationsNotice.vue'
+import { pluralize } from '@/utils/text'
 
 const props = defineProps<{
   jobs: readonly Job[]
@@ -33,6 +35,16 @@ const emit = defineEmits<{
 const onSearchInput = (event: Event): void => {
   emit('update:search-query', (event.target as HTMLInputElement).value)
 }
+
+// Only spells out "N of M" when the list is actually narrower than the
+// total matches (i.e. the map viewport is hiding some of them) -- when
+// they're equal, "N of N" adds nothing over just "N jobs".
+const jobCountText = computed(() => {
+  const { length } = props.jobs
+  return length === props.totalJobCount
+    ? `${length} ${pluralize(length, 'job')}`
+    : `Showing ${length} of ${props.totalJobCount} jobs`
+})
 </script>
 
 <template>
@@ -69,7 +81,7 @@ const onSearchInput = (event: Event): void => {
       </label>
 
       <p class="text-xs text-(--color-text-3)">
-        Showing {{ props.jobs.length }} of {{ props.totalJobCount }} jobs
+        {{ jobCountText }}
       </p>
 
       <RemoteJobsNotice :jobs="props.remoteJobs" />

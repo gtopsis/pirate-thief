@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { pluralize } from '@/utils/text'
 
 const SNAP_POINTS = {
@@ -10,6 +10,11 @@ const SNAP_POINTS = {
 
 type SnapPoint = keyof typeof SNAP_POINTS
 
+// Below this amount of vertical pointer movement (in pixels), a gesture is
+// treated as a tap (handled by @click's toggleSnap) rather than a drag
+// (handled by onPointerUp's snap-to-nearest) -- see onPointerUp.
+const DRAG_THRESHOLD_PX = 10
+
 const props = defineProps<{
   jobCount: number
 }>()
@@ -17,9 +22,12 @@ const props = defineProps<{
 const snap = ref<SnapPoint>('collapsed')
 const viewportHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 800)
 const isDragging = ref(false)
+const hasDraggedPastThreshold = ref(false)
 const dragStartY = ref(0)
 const dragStartHeightRatio = ref(0)
 const currentHeightRatio = ref<number>(SNAP_POINTS.collapsed)
+
+const isExpanded = computed(() => snap.value !== 'collapsed')
 
 const updateViewportHeight = (): void => {
   viewportHeight.value = window.innerHeight
@@ -50,6 +58,7 @@ const nearestSnap = (ratio: number): SnapPoint => {
 
 const onPointerDown = (event: PointerEvent): void => {
   isDragging.value = true
+  hasDraggedPastThreshold.value = false
   dragStartY.value = event.clientY
   dragStartHeightRatio.value = currentHeightRatio.value
   ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
@@ -59,15 +68,38 @@ const onPointerMove = (event: PointerEvent): void => {
   if (!isDragging.value) return
 
   const deltaY = dragStartY.value - event.clientY
+  if (Math.abs(deltaY) > DRAG_THRESHOLD_PX) {
+    hasDraggedPastThreshold.value = true
+  }
+
   const deltaRatio = deltaY / viewportHeight.value
   const nextRatio = dragStartHeightRatio.value + deltaRatio
   currentHeightRatio.value = Math.min(SNAP_POINTS.full, Math.max(0.06, nextRatio))
 }
 
+/**
+ * A plain tap (pointerdown+pointerup with no meaningful movement) is left
+ * entirely to @click's toggleSnap -- so from any state (including 'full',
+ * only reachable by dragging), a single tap always steps the sheet back
+ * down (or up from collapsed). Without this guard, even a stationary tap
+ * would re-run snap-to-nearest-of-the-current-ratio here first, which is
+ * harmless on its own, but conflating "was this a drag?" with "did the
+ * click handler already decide?" made the two mechanisms harder to reason
+ * about together -- keeping them mutually exclusive removes that
+ * ambiguity entirely.
+ */
 const onPointerUp = (): void => {
   if (!isDragging.value) return
   isDragging.value = false
-  setSnap(nearestSnap(currentHeightRatio.value))
+
+  if (hasDraggedPastThreshold.value) {
+    setSnap(nearestSnap(currentHeightRatio.value))
+  } else {
+    // Sub-threshold jitter shouldn't leave the sheet at a slightly-off
+    // height; snap back exactly to the current point and let @click
+    // decide whether to toggle it.
+    currentHeightRatio.value = SNAP_POINTS[snap.value]
+  }
 }
 
 onMounted(() => {
@@ -93,8 +125,8 @@ defineExpose({
     <button
       type="button"
       class="shrink-0 w-full flex flex-col items-center gap-1 pt-2 pb-3 cursor-grab active:cursor-grabbing touch-none"
-      :aria-expanded="snap !== 'collapsed'"
-      aria-label="Toggle job list panel"
+      :aria-expanded="isExpanded"
+      :aria-label="isExpanded ? 'Collapse job list panel' : 'Expand job list panel'"
       @click="toggleSnap"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
@@ -102,8 +134,9 @@ defineExpose({
       @pointercancel="onPointerUp"
     >
       <span class="w-10 h-1.5 rounded-full bg-(--color-divider)"></span>
-      <span class="text-xs font-medium text-(--color-text-2)">
+      <span class="flex items-center gap-1 text-xs font-medium text-(--color-text-2)">
         {{ props.jobCount }} {{ pluralize(props.jobCount, 'job') }} in view
+        <span aria-hidden="true">{{ isExpanded ? '▾' : '▴' }}</span>
       </span>
     </button>
 
