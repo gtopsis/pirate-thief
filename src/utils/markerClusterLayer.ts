@@ -11,6 +11,17 @@ export interface MarkerClusterLayerCallbacks {
   registerMarker: (jobId: string, marker: L.Marker) => void
 }
 
+// Each city marker carries the number of jobs it represents, so a cluster
+// (which merges several nearby city markers into one bubble at lower zoom
+// levels) can sum them up -- keeping the number on a bubble consistent
+// with what a single pin shows (a job count, not a location count).
+interface JobCountMarker extends L.Marker {
+  jobCount: number
+}
+
+const totalJobCount = (cluster: L.MarkerCluster): number =>
+  cluster.getAllChildMarkers().reduce((sum, marker) => sum + (marker as JobCountMarker).jobCount, 0)
+
 const clusterIconClass = (count: number): string => {
   if (count >= 30) return 'marker-cluster-large'
   if (count >= 10) return 'marker-cluster-medium'
@@ -18,7 +29,7 @@ const clusterIconClass = (count: number): string => {
 }
 
 const createClusterIcon = (cluster: L.MarkerCluster): L.DivIcon => {
-  const count = cluster.getChildCount()
+  const count = totalJobCount(cluster)
   return L.divIcon({
     html: `<div class="marker-cluster-inner ${clusterIconClass(count)}"><span>${count}</span></div>`,
     className: 'marker-cluster-custom',
@@ -30,6 +41,9 @@ const createClusterIcon = (cluster: L.MarkerCluster): L.DivIcon => {
  * Manages the clustered city-marker layer: groups jobs by resolved
  * coordinate into one pin per unique location (with a popup listing every
  * job there), and clusters nearby pins together as the map zooms out.
+ * Both a single pin and a cluster bubble show a job count -- clustering
+ * only changes *how many locations* are represented by one bubble, not
+ * what the number on it means.
  *
  * Kept as a single stateful unit so the map component only has to call
  * `update`/`attachTo`/`detachFrom`/`fitBounds` without owning the
@@ -70,7 +84,8 @@ export const createMarkerClusterLayer = (callbacks: MarkerClusterLayerCallbacks)
         popupAnchor: [0, -30]
       })
 
-      const marker = L.marker([lat, lng], { icon })
+      const marker = L.marker([lat, lng], { icon }) as JobCountMarker
+      marker.jobCount = groupedJobs.length
       marker.bindPopup(callbacks.buildPopupContent(groupedJobs))
       marker.on('click', () => callbacks.onMarkerClick(groupedJobs))
 
