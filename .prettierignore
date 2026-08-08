@@ -2,3 +2,7 @@
 # Left minified (single line) intentionally -- this is a large geometry and
 # pretty-printing it would balloon the file size for no benefit.
 src/data/greece-boundary.json
+
+# Generated from GeoNames data via scripts/generate-greek-cities.mjs. Left
+# minified (single line) intentionally, same reasoning as above.
+src/data/greek-cities.json

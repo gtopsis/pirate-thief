@@ -8,15 +8,18 @@ import {
 import type { Job } from '@/types/types'
 
 // Named coordinates so the test tables below read like plain English
-// instead of repeating "magic" lat/lng pairs.
-const ATHENS: [number, number] = [37.9838, 23.7275]
-const THESSALONIKI: [number, number] = [40.6401, 22.9444]
-const HERAKLION_CRETE: [number, number] = [35.3617, 25.1648]
+// instead of repeating "magic" lat/lng pairs. These match
+// src/data/greek-cities.json, generated from GeoNames data (see
+// scripts/generate-greek-cities.mjs) -- re-run that generator's output
+// through this file if it's ever regenerated and these drift.
+const ATHENS: [number, number] = [37.9838, 23.7278]
+const THESSALONIKI: [number, number] = [40.6407, 22.9349]
+const HERAKLION_CRETE: [number, number] = [35.3279, 25.1434]
 // Neo Heraklio / Nea Irakleio is a distinct suburb of Athens (Attica),
 // unrelated to Heraklion in Crete despite the similar name.
-const NEO_HERAKLIO_ATHENS_SUBURB: [number, number] = [38.0489, 23.7621]
-const AG_PARASKEVI: [number, number] = [38.0167, 23.8167]
-const KIFISIA: [number, number] = [38.0741, 23.8074]
+const NEO_HERAKLIO_ATHENS_SUBURB: [number, number] = [38.0427, 23.7673]
+const AG_PARASKEVI: [number, number] = [38.0167, 23.8333]
+const KIFISIA: [number, number] = [38.0744, 23.8111]
 
 describe('getCoordsForLocation', () => {
   it.each<[string, [number, number]]>([

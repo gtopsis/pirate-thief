@@ -12,6 +12,19 @@ interface CityEntry {
   canonical: string
   coords: [number, number]
   aliases: string[]
+  /**
+   * Whether this place participates in fuzzy (typo-tolerant) matching.
+   * The generated dataset (see scripts/generate-greek-cities.mjs) is a
+   * small, curated list of major/well-known places, so every entry sets
+   * this to true -- but the flag still exists as a safety net (and an
+   * escape hatch, if the list ever grows to include less prominent
+   * places where fuzzy-matching would become unsafe: generic English
+   * text could then start coincidentally landing within edit-distance
+   * of an obscure name purely by chance). Exact/substring matching still
+   * applies to every place regardless of this flag; only the
+   * typo-recovery safety net is restricted by it.
+   */
+  fuzzy?: boolean
 }
 
 interface AliasEntry {
@@ -146,7 +159,7 @@ const findFuzzyMatch = (normalizedInput: string): CityEntry | null => {
   let best: { entry: CityEntry; distance: number } | null = null
 
   for (const { alias, entry } of ALIAS_ENTRIES) {
-    if (alias.length < FUZZY_MIN_ALIAS_LENGTH) continue
+    if (!entry.fuzzy || alias.length < FUZZY_MIN_ALIAS_LENGTH) continue
 
     const aliasWordCount = alias.split(' ').length
 

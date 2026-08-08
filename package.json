@@ -12,7 +12,8 @@
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --fix",
     "format": "prettier --write src/",
-    "generate:greece-boundary": "node scripts/generate-greece-boundary.mjs"
+    "generate:greece-boundary": "node scripts/generate-greece-boundary.mjs",
+    "generate:greek-cities": "node scripts/generate-greek-cities.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -42,6 +43,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
     "eslint-plugin-vue": "^10.10.0",
+    "extract-zip": "^2.0.1",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
     "npm-run-all2": "^9.0.2",
