@@ -129,6 +129,43 @@ describe('HomeView', () => {
     )
   })
 
+  it('requires Alt for the r/h keyboard shortcuts (WCAG 2.1.4: Character Key Shortcuts)', async () => {
+    // jsdom can't actually render the heatmap (see the fallback test
+    // above), so toggling it always logs and reverts -- used here purely
+    // as a signal that the "h" shortcut actually ran toggleViewMode().
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    wrapper = await mountHomeView()
+
+    const fetchCallsBefore = (window.fetch as ReturnType<typeof vi.fn>).mock.calls.length
+
+    // A bare "h" (no modifier) must not toggle the heatmap view...
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h' }))
+    await flushPromises()
+    expect(consoleErrorSpy).not.toHaveBeenCalled()
+
+    // ...but Alt+H does (and jsdom's lack of canvas support makes it log
+    // and fall back, proving the toggle actually ran).
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', altKey: true }))
+    await flushPromises()
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Heatmap view is unavailable'),
+      expect.anything()
+    )
+
+    // A bare "r" must not trigger a refresh...
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }))
+    await flushPromises()
+    expect((window.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBe(fetchCallsBefore)
+
+    // ...but Alt+R does.
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', altKey: true }))
+    await flushPromises()
+    expect((window.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
+      fetchCallsBefore
+    )
+  })
+
   it('persists the map center/zoom in the URL', async () => {
     wrapper = await mountHomeView()
 

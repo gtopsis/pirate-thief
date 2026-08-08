@@ -15,6 +15,7 @@ const props = withDefaults(defineProps<Props>(), { size: 'md', color: 'currentCo
       :width="sizeInPixels"
       :height="sizeInPixels"
       :fill="iconColor"
+      aria-hidden="true"
       version="1.1"
       xmlns="http://www.w3.org/2000/svg"
       xmlns:xlink="http://www.w3.org/1999/xlink"

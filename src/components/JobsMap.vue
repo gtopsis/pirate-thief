@@ -263,13 +263,21 @@ watch(() => props.highlightedJobId, applyHighlight)
 
 <template>
   <div class="relative w-full h-full min-h-[300px]">
-    <div ref="mapContainer" class="absolute inset-0"></div>
+    <div
+      ref="mapContainer"
+      role="region"
+      aria-label="Interactive map of job locations across Greece. The job list panel provides the same data in text form."
+      class="absolute inset-0"
+    ></div>
 
     <button
       type="button"
       class="map-view-toggle absolute top-3 right-3 z-[1000] rounded-lg px-3 py-1.5 text-xs font-semibold shadow-md bg-(--color-bg) text-(--color-text-1) ring-1 ring-inset ring-(--color-divider) cursor-pointer hover:opacity-90"
       :aria-pressed="viewMode === 'heatmap'"
-      :title="viewMode === 'markers' ? 'Switch to heatmap view' : 'Switch to marker view'"
+      :title="
+        (viewMode === 'markers' ? 'Switch to heatmap view' : 'Switch to marker view') + ' (Alt+H)'
+      "
+      aria-keyshortcuts="Alt+h"
       @click="toggleViewMode"
     >
       {{ viewMode === 'markers' ? 'Heatmap' : 'Markers' }}

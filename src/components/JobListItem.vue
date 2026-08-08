@@ -13,17 +13,27 @@ const emit = defineEmits<{
 }>()
 </script>
 
+<!--
+  The whole card is click-to-select (fly to this job on the map) for mouse
+  users, but isn't itself made focusable/`role="button"`: this card already
+  contains a real, independently focusable link (the job title), and
+  nesting an interactive role around another interactive element is an
+  ARIA anti-pattern screen readers handle poorly. Instead, tabbing to that
+  link (its `@focus`) triggers the same `select` -- giving keyboard users
+  full parity without the nested-interactive-content problem.
+-->
 <template>
   <article
     :data-highlighted="highlighted ? 'true' : undefined"
-    class="flex flex-col justify-between py-2 px-3 shadow-md rounded min-h-20 w-full bg-(--color-bg-mute) transition-shadow data-[highlighted]:ring-2 data-[highlighted]:ring-(--vt-c-blue-dark)"
+    class="flex flex-col justify-between py-2 px-3 shadow-md rounded min-h-20 w-full bg-(--color-bg-mute) transition-shadow cursor-pointer data-[highlighted]:ring-2 data-[highlighted]:ring-(--vt-c-blue-dark)"
     @click="emit('select')"
   >
     <a
-      class="text-lg md:text-xl font-bold leading-relaxed tracking-normal antialiased text-(--vt-c-blue-dark) dark:text-(--vt-c-blue-light)"
+      class="text-lg md:text-xl font-bold leading-relaxed tracking-normal antialiased text-(--vt-c-blue-dark) dark:text-(--vt-c-blue-light) rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--vt-c-blue-dark)"
       :href="url"
       target="_blank"
       rel="noopener noreferrer"
+      @focus="emit('select')"
     >
       {{ title }}
       <span class="sr-only">(opens in new tab)</span>

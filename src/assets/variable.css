@@ -32,14 +32,22 @@
   --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
 
   --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.7);
-  --vt-c-text-light-3: rgba(60, 60, 60, 0.33);
+  /* text-light-2/3 alphas were 0.7/0.33 -- computed contrast against a
+     white background was ~4.51:1 (right at the WCAG AA 4.5:1 edge, risky)
+     and ~1.85:1 (a hard fail) respectively, despite being used for
+     functionally important text (job counts, notices, empty-state
+     guidance), not just decoration. Raised to keep a visible light/dark
+     hierarchy while both comfortably clear 4.5:1 (~6.4:1 / ~4.8:1). */
+  --vt-c-text-light-2: rgba(60, 60, 60, 0.82);
+  --vt-c-text-light-3: rgba(60, 60, 60, 0.72);
   --vt-c-text-light-4: rgba(60, 60, 60, 0.18);
   --vt-c-text-light-code: var(--vt-c-indigo-soft);
 
   --vt-c-text-dark-1: rgba(255, 255, 255, 0.87);
   --vt-c-text-dark-2: rgba(235, 235, 235, 0.6);
-  --vt-c-text-dark-3: rgba(235, 235, 235, 0.38);
+  /* text-dark-3 was 0.38 (~3.19:1 against the dark background, also a
+     fail for normal-size text); raised to ~0.54 (~5.1:1). */
+  --vt-c-text-dark-3: rgba(235, 235, 235, 0.54);
   --vt-c-text-dark-4: rgba(235, 235, 235, 0.18);
   --vt-c-text-dark-code: var(--vt-c-indigo-light);
 

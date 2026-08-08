@@ -120,7 +120,12 @@ const jobCountText = computed(() => {
         Sync list with map view
       </label>
 
-      <p v-if="!props.compact" class="text-xs text-(--color-text-3)">
+      <p
+        v-if="!props.compact"
+        aria-live="polite"
+        aria-atomic="true"
+        class="text-xs text-(--color-text-3)"
+      >
         {{ jobCountText }}
       </p>
 
@@ -133,11 +138,11 @@ const jobCountText = computed(() => {
     <div class="flex-1 min-h-0 overflow-y-auto px-3 py-3">
       <JobListSkeleton v-if="props.isLoading" />
 
-      <p v-else-if="props.error" class="text-center my-4">
+      <p v-else-if="props.error" role="alert" class="text-center my-4">
         Fetching jobs failed. Please try again later.
       </p>
 
-      <div v-else-if="props.jobs.length === 0" class="text-center my-8">
+      <div v-else-if="props.jobs.length === 0" role="status" class="text-center my-8">
         <p class="text-base text-(--color-text-2) mb-2">No jobs match</p>
         <p class="text-sm text-(--color-text-3) mb-4">
           Try a different search, tech area, or pan/zoom the map

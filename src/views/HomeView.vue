@@ -77,6 +77,14 @@ const handleJobHover = (jobId: string | null): void => {
 }
 
 const handleJobSelect = (jobId: string): void => {
+  // Avoid redundant work (and, more importantly, an unwanted map pan) when
+  // this job is already the active one -- e.g. scrollJobCardIntoView's
+  // focus() call (for keyboard/screen-reader users) re-triggers this same
+  // handler for a job a marker click just selected; re-flying to it would
+  // fire a bounds-changed event that immediately reverts Point map focus
+  // right after selectLocation() set it.
+  if (activeJobId.value === jobId) return
+
   activeJobId.value = jobId
   jobsMapRef.value?.flyToJob(jobId)
 }
@@ -103,6 +111,11 @@ const clearEverything = (): void => {
 }
 
 // === Keyboard Navigation ===
+// 'r'/'h' require Alt so they're exempt from WCAG 2.1.4 (Character Key
+// Shortcuts), which applies only to shortcuts using nothing but a bare
+// letter/punctuation/number/symbol key -- Escape is a named
+// (non-printable) key, so it isn't covered by 2.1.4 and is left bare,
+// matching its conventional "cancel/clear" meaning.
 const handleKeydown = (event: KeyboardEvent): void => {
   // Ignore if user is typing in an input
   if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
@@ -111,12 +124,14 @@ const handleKeydown = (event: KeyboardEvent): void => {
 
   switch (event.key.toLowerCase()) {
     case 'r':
-      if (!isLoading.value) {
+      if (event.altKey && !isLoading.value) {
         handleRefresh()
       }
       break
     case 'h':
-      jobsMapRef.value?.toggleViewMode()
+      if (event.altKey) {
+        jobsMapRef.value?.toggleViewMode()
+      }
       break
     case 'escape':
       if (hasActiveFilters.value || searchQuery.value || mapFocus.value !== 'area') {

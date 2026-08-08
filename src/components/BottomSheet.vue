@@ -43,6 +43,20 @@ const currentHeightRatio = ref<number>(SNAP_POINTS.collapsed)
 const isExpanded = computed(() => snap.value !== 'collapsed')
 const isFull = computed(() => snap.value === 'full')
 
+// Cycled through in this order by tapping the handle -- see toggleSnap.
+// Keeping 'full' reachable this way (not just by dragging) is required
+// for WCAG 2.5.7 (Dragging Movements): any drag-operated functionality
+// needs a single-pointer/keyboard alternative.
+const SNAP_CYCLE: SnapPoint[] = ['collapsed', 'half', 'full']
+
+const nextSnapLabel = computed(() => {
+  const nextIndex = (SNAP_CYCLE.indexOf(snap.value) + 1) % SNAP_CYCLE.length
+  const next = SNAP_CYCLE[nextIndex]
+  if (next === 'full') return 'Expand job list panel to full view'
+  if (next === 'half') return 'Expand job list panel'
+  return 'Collapse job list panel'
+})
+
 const updateViewportHeight = (): void => {
   viewportHeight.value = getViewportHeight()
 }
@@ -53,7 +67,8 @@ const setSnap = (point: SnapPoint): void => {
 }
 
 const toggleSnap = (): void => {
-  setSnap(snap.value === 'collapsed' ? 'half' : 'collapsed')
+  const nextIndex = (SNAP_CYCLE.indexOf(snap.value) + 1) % SNAP_CYCLE.length
+  setSnap(SNAP_CYCLE[nextIndex]!)
 }
 
 const nearestSnap = (ratio: number): SnapPoint => {
@@ -93,14 +108,13 @@ const onPointerMove = (event: PointerEvent): void => {
 
 /**
  * A plain tap (pointerdown+pointerup with no meaningful movement) is left
- * entirely to @click's toggleSnap -- so from any state (including 'full',
- * only reachable by dragging), a single tap always steps the sheet back
- * down (or up from collapsed). Without this guard, even a stationary tap
- * would re-run snap-to-nearest-of-the-current-ratio here first, which is
- * harmless on its own, but conflating "was this a drag?" with "did the
- * click handler already decide?" made the two mechanisms harder to reason
- * about together -- keeping them mutually exclusive removes that
- * ambiguity entirely.
+ * entirely to @click's toggleSnap -- so tapping from 'full' always steps
+ * the sheet directly back down to 'collapsed' (see SNAP_CYCLE). Without
+ * this guard, even a stationary tap would re-run snap-to-nearest-of-the
+ * -current-ratio here first, which is harmless on its own, but conflating
+ * "was this a drag?" with "did the click handler already decide?" made
+ * the two mechanisms harder to reason about together -- keeping them
+ * mutually exclusive removes that ambiguity entirely.
  */
 const onPointerUp = (): void => {
   if (!isDragging.value) return
@@ -142,7 +156,7 @@ defineExpose({
       type="button"
       class="shrink-0 w-full flex flex-col items-center gap-1 pt-2 pb-3 cursor-grab active:cursor-grabbing touch-none"
       :aria-expanded="isExpanded"
-      :aria-label="isExpanded ? 'Collapse job list panel' : 'Expand job list panel'"
+      :aria-label="nextSnapLabel"
       @click="toggleSnap"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"

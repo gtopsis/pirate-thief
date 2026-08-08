@@ -49,7 +49,7 @@ const hasAnyActive = computed(
       v-if="hasSearch"
       type="button"
       :aria-label="`Clear search: ${props.searchQuery}`"
-      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 bg-(--color-bg-mute) ring-1 ring-inset ring-(--color-divider) hover:opacity-80 cursor-pointer"
+      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 bg-(--color-bg-mute) ring-1 ring-inset ring-(--color-divider) hover:opacity-80 cursor-pointer"
       @click="emit('clear-search')"
     >
       <span>&quot;{{ props.searchQuery }}&quot;</span>
@@ -61,7 +61,7 @@ const hasAnyActive = computed(
       :key="name"
       type="button"
       :aria-label="`Clear filter: ${name}`"
-      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 bg-(--color-bg-mute) ring-1 ring-inset ring-(--color-divider) hover:opacity-80 cursor-pointer"
+      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 bg-(--color-bg-mute) ring-1 ring-inset ring-(--color-divider) hover:opacity-80 cursor-pointer"
       @click="emit('clear-filter', name)"
     >
       <span>{{ name }}</span>
@@ -72,7 +72,7 @@ const hasAnyActive = computed(
       v-if="mapFocusPillLabel"
       type="button"
       aria-label="Reset to the default map view"
-      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 bg-(--color-bg-mute) ring-1 ring-inset ring-(--color-divider) hover:opacity-80 cursor-pointer"
+      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 bg-(--color-bg-mute) ring-1 ring-inset ring-(--color-divider) hover:opacity-80 cursor-pointer"
       @click="emit('clear-map-focus')"
     >
       <span>{{ mapFocusPillLabel }}</span>

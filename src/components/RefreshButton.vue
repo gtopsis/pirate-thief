@@ -18,7 +18,8 @@ const buttonLabel = computed(() => (props.isLoading ? 'Loading jobs...' : 'Refre
     type="button"
     :disabled="isLoading"
     :aria-label="buttonLabel"
-    :title="buttonLabel"
+    :title="`${buttonLabel} (Alt+R)`"
+    aria-keyshortcuts="Alt+r"
     class="inline-flex items-center py-1.5 px-3 text-sm font-medium border-none cursor-pointer disabled:cursor-wait text-(--vt-c-blue-dark) dark:text-(--vt-c-blue-light)"
     @click="emit('click')"
   >

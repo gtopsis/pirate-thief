@@ -47,3 +47,19 @@ a:hover {
   height: 100%;
   font-weight: normal;
 }
+
+/* WCAG 2.3.3 (Animation from Interactions): respect the OS/browser-level
+   "reduce motion" preference app-wide in one place, rather than needing
+   every component with a transition/animation (the spinner's spin, the
+   bottom sheet's height transition, the marker-highlight scale/shadow
+   transition, smooth-scrolling, etc.) to handle it individually. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
