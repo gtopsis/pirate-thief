@@ -263,6 +263,18 @@ export const isJobRemote = (job: Job): boolean => isRemoteLocation(job.location)
 export const getRemoteJobs = (jobs: readonly Job[]): Job[] => jobs.filter(isJobRemote)
 
 /**
+ * Jobs that resolve to a specific place on the map -- i.e. every matching
+ * job except the remote and genuinely-unmappable ones (see
+ * getRemoteJobs/getUnmappableJobs). This is the correct universe to
+ * compare a map-viewport-narrowed job count against (e.g. "showing 12 of
+ * N mappable jobs"): remote/unmappable jobs can never appear as a pin no
+ * matter how the map is panned/zoomed, so counting them in that N would
+ * wrongly suggest more jobs are reachable by moving the map than
+ * actually are.
+ */
+export const getMappableJobs = (jobs: readonly Job[]): Job[] => jobs.filter(isJobMappable)
+
+/**
  * Jobs whose location couldn't be resolved to map coordinates and aren't
  * remote listings -- useful for surfacing a "N jobs couldn't be placed
  * on the map" notice so genuine data issues (typos, unlisted places) are

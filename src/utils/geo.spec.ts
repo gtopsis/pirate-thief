@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   getCoordsForLocation,
+  getMappableJobs,
   getRemoteJobs,
   getUnmappableJobs,
   isRemoteLocation
@@ -177,5 +178,41 @@ describe('getRemoteJobs', () => {
     const jobs = [jobAt('Athens'), jobAt('Thessaloniki')]
 
     expect(getRemoteJobs(jobs)).toEqual([])
+  })
+})
+
+describe('getMappableJobs', () => {
+  it('returns only jobs that resolve to a specific place on the map -- excluding both remote and genuinely-unmappable jobs', () => {
+    const jobs = [
+      jobAt('Athens'),
+      jobAt('Definitely Not A Known City'),
+      jobAt('Remote'),
+      jobAt('Thessaloniki')
+    ]
+
+    const mappable = getMappableJobs(jobs)
+
+    expect(mappable.map((job) => job.location)).toEqual(['Athens', 'Thessaloniki'])
+  })
+
+  it('returns an empty array when every job is remote or unmappable', () => {
+    const jobs = [jobAt('Remote'), jobAt('Definitely Not A Known City')]
+
+    expect(getMappableJobs(jobs)).toEqual([])
+  })
+
+  it('every job falls into exactly one of getMappableJobs/getRemoteJobs/getUnmappableJobs', () => {
+    const jobs = [
+      jobAt('Athens'),
+      jobAt('Definitely Not A Known City'),
+      jobAt('Remote'),
+      jobAt('Thessaloniki'),
+      jobAt('Greece')
+    ]
+
+    const total =
+      getMappableJobs(jobs).length + getRemoteJobs(jobs).length + getUnmappableJobs(jobs).length
+
+    expect(total).toBe(jobs.length)
   })
 })
