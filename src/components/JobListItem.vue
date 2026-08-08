@@ -29,7 +29,7 @@ const emit = defineEmits<{
     @click="emit('select')"
   >
     <a
-      class="text-lg md:text-xl font-bold leading-snug md:leading-relaxed tracking-normal antialiased text-(--vt-c-blue-dark) dark:text-(--vt-c-blue-light) rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--vt-c-blue-dark)"
+      class="text-base md:text-lg font-bold leading-snug md:leading-relaxed tracking-normal antialiased text-(--vt-c-blue-dark) dark:text-(--vt-c-blue-light) rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--vt-c-blue-dark)"
       :href="url"
       target="_blank"
       rel="noopener noreferrer"
