@@ -150,6 +150,41 @@ describe('HomeView', () => {
     expect(wrapper.text()).toContain('Backend (1)')
   })
 
+  it('includes remote jobs in the synced list/counts when the viewport contains the remote marker (not just a city pin)', async () => {
+    wrapper = await mountHomeView()
+    // Default state: synced to the map view ('area' focus).
+
+    const jobsMap = wrapper.findComponent(JobsMap)
+
+    // Athens ~[37.98, 23.73] and GREECE_CENTER ~[39.07, 21.82] (where the
+    // remote-jobs marker is always drawn) both fall within this range;
+    // Thessaloniki ~[40.64, 22.93] (Backend) does not.
+    await jobsMap.vm.$emit('bounds-changed', { north: 39.5, south: 37.5, east: 24, west: 21.5 })
+    await flushPromises()
+
+    // The list contains both the in-view city's job and the remote job...
+    expect(wrapper.text()).toContain('Senior Frontend Engineer')
+    expect(wrapper.text()).toContain('DevOps Engineer')
+    // ...but not the out-of-view city's job.
+    expect(wrapper.text()).not.toContain('Backend Engineer')
+
+    // Filter pill counts agree: Frontend and DevOps (remote) are both
+    // represented, Backend (Thessaloniki-only) is zeroed out.
+    expect(wrapper.text()).toContain('Frontend (1)')
+    expect(wrapper.text()).toContain('DevOps (1)')
+    expect(wrapper.text()).toContain('Backend (0)')
+
+    // Panning away from GREECE_CENTER (but still over Athens) drops the
+    // remote job again, confirming it's genuinely tied to the marker's
+    // location rather than always being included once synced.
+    await jobsMap.vm.$emit('bounds-changed', { north: 38.5, south: 37.5, east: 24, west: 23 })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Senior Frontend Engineer')
+    expect(wrapper.text()).not.toContain('DevOps Engineer')
+    expect(wrapper.text()).toContain('DevOps (0)')
+  })
+
   it('gracefully falls back to markers view if heatmap rendering is unavailable', async () => {
     // jsdom doesn't implement canvas 2D contexts, so leaflet.heat can't
     // actually render. This verifies the app degrades gracefully (no

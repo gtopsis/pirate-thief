@@ -290,17 +290,25 @@ const isCoordInBounds = (coord: [number, number], bounds: MapBounds): boolean =>
 }
 
 /**
- * Filter jobs down to only those whose resolved coordinates fall
- * within the given map viewport bounds. Jobs without resolvable
- * coordinates (e.g. Remote) are excluded, since they cannot be
- * represented within any viewport.
+ * Filter jobs down to only those currently represented within the given
+ * map viewport bounds. Most jobs resolve to a single coordinate and are
+ * included/excluded based on that alone. Remote jobs have no single
+ * coordinate -- but they're still drawn on the map, as a fixed marker at
+ * Greece's geographic center (see remoteJobsLayer.ts) -- so they're
+ * included exactly when that fixed point is currently in view, matching
+ * what's actually visible on screen (e.g. zooming into a viewport that
+ * happens to contain both a city's pin and the remote marker should
+ * surface both cities' and remote jobs, not just the city's).
  */
 export const filterJobsByBounds = (jobs: readonly Job[], bounds: MapBounds | null): Job[] => {
   if (!bounds) return [...jobs]
 
+  const isRemoteMarkerInView = isCoordInBounds(GREECE_CENTER, bounds)
+
   return jobs.filter((job) => {
     const coords = getJobCoords(job)
-    return coords !== null && isCoordInBounds(coords, bounds)
+    if (coords !== null) return isCoordInBounds(coords, bounds)
+    return isJobRemote(job) && isRemoteMarkerInView
   })
 }
 
