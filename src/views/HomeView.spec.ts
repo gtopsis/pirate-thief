@@ -175,6 +175,28 @@ describe('HomeView', () => {
     expect(params.has('z')).toBe(true)
   })
 
+  it('updates the job-count text live as the map is panned, while synced to the map view', async () => {
+    wrapper = await mountHomeView()
+    // Default state: synced to the map view ('area' focus) -- do NOT call
+    // showAllJobs() here, since the whole point is to verify the count
+    // reacts to panning while synced, not just to search/filters.
+
+    const jobsMap = wrapper.findComponent(JobsMap)
+
+    // Athens ~[37.98, 23.73]; Thessaloniki ~[40.64, 22.93] -- this range
+    // encloses only Athens (Frontend job).
+    await jobsMap.vm.$emit('bounds-changed', { north: 38.5, south: 37.5, east: 24, west: 23 })
+    await flushPromises()
+    expect(wrapper.text()).toContain('1 job')
+    expect(wrapper.text()).not.toContain('2 jobs')
+
+    // Panning to a wider view that also encloses Thessaloniki (Backend
+    // job) updates the count live, without touching search/filters at all.
+    await jobsMap.vm.$emit('bounds-changed', { north: 41, south: 37, east: 24, west: 22 })
+    await flushPromises()
+    expect(wrapper.text()).toContain('2 jobs')
+  })
+
   it('surfaces jobs whose location could not be placed on the map', async () => {
     const unmappableJob = [
       'Delta LLC',
@@ -190,14 +212,9 @@ describe('HomeView', () => {
 
     // Only the unknown/typo'd location counts as unmappable -- REMOTE_JOB
     // is a legitimate remote listing, surfaced separately (see below).
+    // This is plain, always-visible text (no expand/collapse) -- the
+    // job's own list card (checked next) is what shows its details.
     expect(wrapper.text()).toContain("1 job couldn't be placed on the map")
-
-    const notice = wrapper.findAll('button[aria-expanded]')[0]!
-    expect(notice.attributes('aria-expanded')).toBe('false')
-
-    await notice.trigger('click')
-
-    expect(notice.attributes('aria-expanded')).toBe('true')
     expect(wrapper.text()).toContain('Definitely Not A Known City')
   })
 

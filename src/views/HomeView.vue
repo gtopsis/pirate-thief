@@ -57,13 +57,18 @@ const bottomSheetRef = ref<InstanceType<typeof BottomSheet> | null>(null)
 // The single "how many jobs am I looking at" label, shared by the
 // desktop sidebar and the mobile bottom sheet's persistent handle (see
 // JobPanel's/BottomSheet's jobCountText props) -- computed once here so
-// there's exactly one such message, worded one way. A plain total of
-// everything matching search/filters, deliberately not narrowed by the
-// map's current viewport/focus -- the remote and couldn't-be-placed
-// subsets are separately, plainly called out right below it (see
-// RemoteJobsNotice/UnmappedLocationsNotice), so every number is stated
-// outright instead of implied by a "shown vs. total" comparison.
-const jobCountText = computed(() => formatJobCountText(filteredJobList.value.length))
+// there's exactly one such message, worded one way. Tracks panelJobList
+// (not filteredJobList): when synced to the map ('area'/'point' focus),
+// that's exactly what's currently presented on the map/list, so this
+// updates live as the map is panned/zoomed, not just when search/filters
+// change. When unsynced ('all' focus), panelJobList already equals
+// filteredJobList, so this naturally shows everything in that case. The
+// remote and couldn't-be-placed subsets are separately, plainly called
+// out right below it (see RemoteJobsNotice/UnmappedLocationsNotice) --
+// those are pan/zoom-independent (remote/unmappable jobs have no
+// coordinates to be in or out of view), so they intentionally keep
+// tracking filteredJobList instead.
+const jobCountText = computed(() => formatJobCountText(panelJobList.value.length))
 
 // Grouped so the desktop panel and mobile bottom sheet can both bind the
 // same JobPanel props with a single `v-bind`, instead of repeating every
@@ -187,7 +192,7 @@ onUnmounted(() => {
            one persistent column alongside the map (the app's only other
            top-level region on desktop -- see the main view below). -->
       <aside
-        class="hidden md:flex md:flex-col md:w-[380px] lg:w-[420px] shrink-0 border-r border-(--color-divider) bg-(--color-bg)"
+        class="hidden md:flex md:flex-col md:w-[420px] lg:w-[460px] shrink-0 border-r border-(--color-divider) bg-(--color-bg)"
       >
         <div class="shrink-0 flex flex-col gap-1 px-4 py-3 border-b border-(--color-divider)">
           <div class="flex items-center justify-between gap-2">
