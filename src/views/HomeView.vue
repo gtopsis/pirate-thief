@@ -31,7 +31,6 @@ const {
   filteredJobList,
   unmappableJobs,
   remoteJobs,
-  mappableJobs,
   toggleFilter,
   clearAllFilters
 } = useJobFilters(validJobList)
@@ -55,29 +54,16 @@ const activeJobId = ref<string | null>(null)
 const jobsMapRef = ref<InstanceType<typeof JobsMap> | null>(null)
 const bottomSheetRef = ref<InstanceType<typeof BottomSheet> | null>(null)
 
-// The total to compare panelJobList against for jobCountText. When
-// mapFocus is 'all', the list already shows every matching job
-// (panelJobList === filteredJobList), so the comparison naturally
-// collapses to a plain count. Otherwise ('area'/'point'), the list can
-// only ever contain mappable jobs -- remote jobs have no single pin to
-// narrow to, and unmappable ones have no coordinates at all -- so the
-// comparison is scoped to the mappable total instead of every matching
-// job; counting remote/unmappable jobs there would wrongly suggest
-// panning/zooming could reveal them too, when it never can (see
-// getMappableJobs).
-const jobCountTotal = computed(() =>
-  mapFocus.value === 'all' ? filteredJobList.value.length : mappableJobs.value.length
-)
-
 // The single "how many jobs am I looking at" label, shared by the
 // desktop sidebar and the mobile bottom sheet's persistent handle (see
 // JobPanel's/BottomSheet's jobCountText props) -- computed once here so
-// there's exactly one such message, worded one way, instead of each
-// place separately formatting its own similar-but-not-quite-identical
-// text from these same two numbers.
-const jobCountText = computed(() =>
-  formatJobCountText(panelJobList.value.length, jobCountTotal.value)
-)
+// there's exactly one such message, worded one way. A plain total of
+// everything matching search/filters, deliberately not narrowed by the
+// map's current viewport/focus -- the remote and couldn't-be-placed
+// subsets are separately, plainly called out right below it (see
+// RemoteJobsNotice/UnmappedLocationsNotice), so every number is stated
+// outright instead of implied by a "shown vs. total" comparison.
+const jobCountText = computed(() => formatJobCountText(filteredJobList.value.length))
 
 // Grouped so the desktop panel and mobile bottom sheet can both bind the
 // same JobPanel props with a single `v-bind`, instead of repeating every

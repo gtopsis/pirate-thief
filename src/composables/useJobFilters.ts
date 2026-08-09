@@ -10,7 +10,7 @@ import {
   toggleFilterInMap
 } from '@/utils/jobs'
 import { applyUrlFiltersToMap, getFiltersFromUrl, setFiltersInUrl } from '@/utils/urlState'
-import { getMappableJobs, getRemoteJobs, getUnmappableJobs } from '@/utils/geo'
+import { getRemoteJobs, getUnmappableJobs } from '@/utils/geo'
 
 /**
  * Owns tech-area filter + free-text search state (URL-persisted), and
@@ -47,15 +47,6 @@ export const useJobFilters = (jobs: Ref<Job[]> | ComputedRef<Job[]>) => {
   // anywhere in Greece), so they're represented separately (e.g. as a
   // nationwide map overlay) instead of being lumped in with unmappableJobs.
   const remoteJobs = computed(() => getRemoteJobs(filteredJobList.value))
-
-  // Jobs matching the current filters/search that resolve to a specific
-  // place on the map -- i.e. every one of them except the remote and
-  // unmappable jobs above. This is the correct total to compare a
-  // viewport-narrowed count against (see HomeView's jobCountText):
-  // remote/unmappable jobs are never reachable by panning/zooming, so
-  // counting them in that total would wrongly suggest more jobs could be
-  // revealed that way than actually can.
-  const mappableJobs = computed(() => getMappableJobs(filteredJobList.value))
 
   // Rebuilds the filters Map from the current job list's tech areas
   // (preserving existing selections), then re-applies any filters
@@ -98,7 +89,6 @@ export const useJobFilters = (jobs: Ref<Job[]> | ComputedRef<Job[]>) => {
     filteredJobList,
     unmappableJobs,
     remoteJobs,
-    mappableJobs,
     toggleFilter,
     clearAllFilters
   }

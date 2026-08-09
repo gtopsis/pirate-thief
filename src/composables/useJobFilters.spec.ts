@@ -58,11 +58,10 @@ describe('useJobFilters', () => {
       jobAt({ title: 'Athens role', location: 'Athens', url: 'https://x/3' })
     ])
 
-    const { remoteJobs, unmappableJobs, mappableJobs } = useJobFilters(jobs)
+    const { remoteJobs, unmappableJobs } = useJobFilters(jobs)
 
     expect(remoteJobs.value.map((job) => job.title)).toEqual(['Remote role'])
     expect(unmappableJobs.value.map((job) => job.title)).toEqual(['Typo city'])
-    expect(mappableJobs.value.map((job) => job.title)).toEqual(['Athens role'])
   })
 
   it('rebuilds filters (preserving existing selections) when the underlying job list changes', async () => {

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Job } from '@/types/types'
-import CollapsibleJobsNotice from '@/components/CollapsibleJobsNotice.vue'
 import { pluralize } from '@/utils/text'
 
 const props = defineProps<{
@@ -9,12 +8,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <CollapsibleJobsNotice :jobs="props.jobs">
-    <template #message="{ count }">
-      {{ count }} {{ pluralize(count, 'job') }} couldn't be placed on the map
-    </template>
-    <template #item="{ job }">
-      <strong>{{ job.company }}</strong> - {{ job.title }}: "{{ job.location }}"
-    </template>
-  </CollapsibleJobsNotice>
+  <p v-if="props.jobs.length > 0" class="text-xs text-(--color-text-3)">
+    {{ props.jobs.length }} {{ pluralize(props.jobs.length, 'job') }} couldn't be placed on the map
+  </p>
 </template>
