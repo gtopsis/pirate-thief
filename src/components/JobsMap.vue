@@ -126,9 +126,7 @@ const updateRemoteLayer = (): void => {
 /**
  * Rebuilds the city-marker layer, the remote overlay, and (if active) the
  * heatmap from the current `props.jobs`/`props.remoteJobs`. Does not
- * re-fit the viewport -- callers decide whether that's appropriate (see
- * `syncMapForJobsChange` vs. the initial mount, which respects a
- * persisted view instead of always fitting to markers).
+ * re-fit the viewport -- see fitToInitialJobsOnce for that.
  */
 const refreshJobLayers = (): void => {
   // Reset once per cycle: both layer factories only ever *add* entries via
@@ -176,15 +174,36 @@ const toggleViewMode = (): void => {
   applyViewMode()
 }
 
+let hasFitInitialBounds = false
+
 /**
- * Rebuilds every job-derived map layer and re-fits the viewport. Runs
+ * Fits the viewport to the current jobs, but only ever once -- the first
+ * time there's something to fit to (jobs typically arrive asynchronously
+ * after mount, so this may run from the mount-time call below or from
+ * the jobs-changed watcher, whichever sees non-empty jobs first). Never
+ * again after that: `props.jobs` also changes whenever a tech-area
+ * filter is toggled or a search query is typed, and re-fitting on every
+ * one of those would reset/zoom out of the user's current pan/zoom
+ * rather than just narrowing what's shown within it. A persisted initial
+ * view (e.g. from a shared URL) is respected instead of ever
+ * auto-fitting at all.
+ */
+const fitToInitialJobsOnce = (): void => {
+  if (!map || hasFitInitialBounds || props.initialView || props.jobs.length === 0) return
+  markerClusterLayer.fitBounds(map)
+  hasFitInitialBounds = true
+}
+
+/**
+ * Rebuilds every job-derived map layer, and fits the viewport if this is
+ * the first time jobs are available (see fitToInitialJobsOnce). Runs
  * whenever the job list or remote-job list changes after the initial
  * mount.
  */
 const syncMapForJobsChange = (): void => {
   if (!map) return
   refreshJobLayers()
-  markerClusterLayer.fitBounds(map)
+  fitToInitialJobsOnce()
 }
 
 /**
@@ -224,11 +243,10 @@ onMounted(() => {
   refreshJobLayers()
   applyViewMode()
 
-  // Only auto-fit to markers when we don't have a persisted view to
-  // restore to (e.g. from a shared URL) -- otherwise respect it.
-  if (!props.initialView && map) {
-    markerClusterLayer.fitBounds(map)
-  }
+  // If jobs are already available at mount time, fit to them now --
+  // otherwise the jobs-changed watcher below picks this up once they
+  // arrive from the (typically async) initial fetch.
+  fitToInitialJobsOnce()
   // Ensure listeners always receive an initial viewport, even when there
   // are no markers to fit bounds to (moveend wouldn't otherwise fire).
   emitBounds()
