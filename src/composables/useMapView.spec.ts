@@ -44,15 +44,15 @@ describe('useMapView', () => {
     expect(panelJobList.value.map((job) => job.location)).toEqual(['Athens'])
   })
 
-  it('showAllJobs shows every matching job regardless of the viewport', () => {
+  it('setSynced(false) shows every matching job regardless of the viewport', () => {
     const filteredJobList = ref<Job[]>([
       jobAt('Athens', 'https://x/1'),
       jobAt('Thessaloniki', 'https://x/2')
     ])
-    const { panelJobList, mapFocus, handleBoundsChanged, showAllJobs } = useMapView(filteredJobList)
+    const { panelJobList, mapFocus, handleBoundsChanged, setSynced } = useMapView(filteredJobList)
 
     handleBoundsChanged({ north: 38.1, south: 37.9, east: 23.8, west: 23.6 })
-    showAllJobs()
+    setSynced(false)
 
     expect(mapFocus.value).toBe('all')
     expect(panelJobList.value).toHaveLength(2)
@@ -91,15 +91,74 @@ describe('useMapView', () => {
     expect(selectedLocationName.value).toBeNull()
   })
 
-  it('followMapArea resets from point or all back to the default area focus', () => {
+  it('clearMapFocusOverride resets a selected marker back to the default area focus', () => {
     const filteredJobList = ref<Job[]>([jobAt('Athens', 'https://x/1')])
-    const { mapFocus, selectLocation, followMapArea } = useMapView(filteredJobList)
+    const { mapFocus, selectLocation, clearMapFocusOverride } = useMapView(filteredJobList)
 
     selectLocation(filteredJobList.value)
     expect(mapFocus.value).toBe('point')
 
-    followMapArea()
+    clearMapFocusOverride()
     expect(mapFocus.value).toBe('area')
+  })
+
+  it('clearMapFocusOverride also re-enables sync if it was off', () => {
+    const filteredJobList = ref<Job[]>([jobAt('Athens', 'https://x/1')])
+    const { mapFocus, setSynced, clearMapFocusOverride } = useMapView(filteredJobList)
+
+    setSynced(false)
+    expect(mapFocus.value).toBe('all')
+
+    clearMapFocusOverride()
+    expect(mapFocus.value).toBe('area')
+  })
+
+  // === The "sync" toggle's interaction with a selected marker ===
+  // Design: a selected marker and the sync toggle are independent bits of
+  // state. Turning sync off doesn't discard the selection -- it just
+  // stops applying it (or the viewport) to the list -- so turning sync
+  // back on resumes exactly where it left off.
+
+  it('turning sync off preserves a selected marker, without narrowing the list', () => {
+    const filteredJobList = ref<Job[]>([
+      jobAt('Athens', 'https://x/1'),
+      jobAt('Thessaloniki', 'https://x/2')
+    ])
+    const athensJobs = [filteredJobList.value[0]!]
+    const { panelJobList, mapFocus, selectLocation, setSynced } = useMapView(filteredJobList)
+
+    selectLocation(athensJobs)
+    expect(mapFocus.value).toBe('point')
+
+    setSynced(false)
+    expect(mapFocus.value).toBe('all')
+    expect(panelJobList.value).toHaveLength(2) // no longer narrowed to Athens
+
+    // Turning sync back on resumes the previously-selected marker.
+    setSynced(true)
+    expect(mapFocus.value).toBe('point')
+    expect(panelJobList.value).toEqual(athensJobs)
+  })
+
+  it('selecting a marker while unsynced has no effect until sync is turned back on', () => {
+    const filteredJobList = ref<Job[]>([
+      jobAt('Athens', 'https://x/1'),
+      jobAt('Thessaloniki', 'https://x/2')
+    ])
+    const athensJobs = [filteredJobList.value[0]!]
+    const { panelJobList, mapFocus, selectLocation, setSynced } = useMapView(filteredJobList)
+
+    setSynced(false)
+    selectLocation(athensJobs)
+
+    // Still "all" -- the marker was remembered, but sync is off, so it
+    // doesn't narrow the list yet.
+    expect(mapFocus.value).toBe('all')
+    expect(panelJobList.value).toHaveLength(2)
+
+    setSynced(true)
+    expect(mapFocus.value).toBe('point')
+    expect(panelJobList.value).toEqual(athensJobs)
   })
 
   it('persists the map view to the URL on handleViewChanged', () => {

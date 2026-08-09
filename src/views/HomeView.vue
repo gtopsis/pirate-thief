@@ -47,8 +47,8 @@ const {
   handleBoundsChanged,
   handleViewChanged,
   selectLocation,
-  showAllJobs,
-  followMapArea
+  setSynced,
+  clearMapFocusOverride
 } = useMapView(filteredJobList)
 
 // === Cross-cutting: job selection (shared between the list and the map) ===
@@ -142,7 +142,7 @@ const handleRefresh = (): Promise<void> => refresh()
 // active-filters bar and the empty-state "Clear all filters" button.
 const clearEverything = (): void => {
   clearAllFilters()
-  followMapArea()
+  clearMapFocusOverride()
 }
 
 // === Keyboard Navigation ===
@@ -227,8 +227,8 @@ onUnmounted(() => {
           @filter:click="toggleFilter"
           @clear-filters="clearEverything"
           @update:search-query="searchQuery = $event"
-          @follow-map-area="followMapArea"
-          @show-all-jobs="showAllJobs"
+          @update:sync="setSynced"
+          @clear-map-focus="clearMapFocusOverride"
           @job:select="handleJobSelect"
           @job:hover="handleJobHover"
         />
@@ -263,8 +263,8 @@ onUnmounted(() => {
               @filter:click="toggleFilter"
               @clear-filters="clearEverything"
               @update:search-query="searchQuery = $event"
-              @follow-map-area="followMapArea"
-              @show-all-jobs="showAllJobs"
+              @update:sync="setSynced"
+              @clear-map-focus="clearMapFocusOverride"
               @job:select="handleJobSelect"
               @job:hover="handleJobHover"
             />

@@ -59,8 +59,8 @@ const emit = defineEmits<{
   (e: 'filter:click', name: string): void
   (e: 'clear-filters'): void
   (e: 'update:search-query', value: string): void
-  (e: 'follow-map-area'): void
-  (e: 'show-all-jobs'): void
+  (e: 'update:sync', synced: boolean): void
+  (e: 'clear-map-focus'): void
   (e: 'job:select', jobId: string): void
   (e: 'job:hover', jobId: string | null): void
 }>()
@@ -70,12 +70,7 @@ const onSearchInput = (event: Event): void => {
 }
 
 const onSyncToggleChange = (event: Event): void => {
-  const checked = (event.target as HTMLInputElement).checked
-  if (checked) {
-    emit('follow-map-area')
-  } else {
-    emit('show-all-jobs')
-  }
+  emit('update:sync', (event.target as HTMLInputElement).checked)
 }
 </script>
 
@@ -129,7 +124,7 @@ const onSyncToggleChange = (event: Event): void => {
         :search-query="props.searchQuery"
         :map-focus="props.mapFocus"
         :selected-location-name="props.selectedLocationName"
-        @clear-map-focus="emit('follow-map-area')"
+        @clear-map-focus="emit('clear-map-focus')"
         @clear-all="emit('clear-filters')"
       />
 

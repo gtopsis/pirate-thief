@@ -307,4 +307,34 @@ describe('HomeView', () => {
     await flushPromises()
     expect(wrapper.find('[aria-label="Reset to the default map view"]').exists()).toBe(false)
   })
+
+  it('selecting a marker while sync is off has no effect until sync is turned back on', async () => {
+    wrapper = await mountHomeView()
+    await showAllJobs(wrapper) // sync off ("all jobs")
+
+    const jobsMap = wrapper.findComponent(JobsMap)
+    const athensJob = {
+      company: 'Acme Corp',
+      title: 'Senior Frontend Engineer',
+      location: 'Athens',
+      techArea: 'Frontend',
+      url: 'https://example.com/job/1'
+    }
+
+    await jobsMap.vm.$emit('marker-click', [athensJob])
+    await flushPromises()
+
+    // Still shows every job -- the marker was remembered, but sync being
+    // off means it doesn't narrow the list yet.
+    expect(wrapper.text()).toContain('Senior Frontend Engineer')
+    expect(wrapper.text()).toContain('Backend Engineer')
+
+    // Re-enabling sync resumes exactly that marker's selection.
+    const syncToggle = wrapper.findAll('input[type="checkbox"]')[0]!
+    await syncToggle.setValue(true)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Senior Frontend Engineer')
+    expect(wrapper.text()).not.toContain('Backend Engineer')
+  })
 })
