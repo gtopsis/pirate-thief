@@ -49,6 +49,15 @@ export const useMapView = (filteredJobList: Ref<Job[]> | ComputedRef<Job[]>) => 
     return filteredJobList.value
   })
 
+  // Every non-'point' MapFocus transition also clears any stale clicked-
+  // marker selection -- shared by showAllJobs/followMapArea below and
+  // handleBoundsChanged's own point->area fallback, so that pairing only
+  // has to be stated once.
+  const setMapFocus = (focus: Exclude<MapFocus, 'point'>): void => {
+    mapFocus.value = focus
+    selectedLocationJobs.value = null
+  }
+
   const handleBoundsChanged = (bounds: MapBounds): void => {
     mapBounds.value = bounds
 
@@ -57,8 +66,7 @@ export const useMapView = (filteredJobList: Ref<Job[]> | ComputedRef<Job[]>) => 
     // back to following the (new) viewport instead of staying pinned to
     // a location that's no longer necessarily relevant.
     if (mapFocus.value === 'point') {
-      mapFocus.value = 'area'
-      selectedLocationJobs.value = null
+      setMapFocus('area')
     }
   }
 
@@ -73,16 +81,10 @@ export const useMapView = (filteredJobList: Ref<Job[]> | ComputedRef<Job[]>) => 
   }
 
   /** Show every matching job, ignoring the map entirely. */
-  const showAllJobs = (): void => {
-    mapFocus.value = 'all'
-    selectedLocationJobs.value = null
-  }
+  const showAllJobs = (): void => setMapFocus('all')
 
   /** Back to the default: follow the current map viewport. */
-  const followMapArea = (): void => {
-    mapFocus.value = 'area'
-    selectedLocationJobs.value = null
-  }
+  const followMapArea = (): void => setMapFocus('area')
 
   return {
     mapBounds,
