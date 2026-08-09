@@ -4,7 +4,6 @@ import type { Job } from '@/types/types'
 import {
   buildActiveFilterSet,
   buildFiltersFromJobs,
-  countJobsByTechArea,
   filterJobs,
   searchJobs,
   toggleFilterInMap
@@ -23,19 +22,24 @@ export const useJobFilters = (jobs: Ref<Job[]> | ComputedRef<Job[]>) => {
   const filters = shallowRef(new Map<string, boolean>())
   const searchQuery = ref('')
 
-  const jobCounts = computed(() => countJobsByTechArea(jobs.value))
-
   const activeFilterSet = computed(() => buildActiveFilterSet(filters.value))
   const hasActiveFilters = computed(() => activeFilterSet.value.size > 0)
 
+  // Jobs matching the free-text search alone, independent of tech-area
+  // filters -- exposed separately (rather than only as a private step
+  // inside filteredJobList below) so callers that need "what would match
+  // if no particular tech area were singled out" have it directly (e.g.
+  // HomeView's per-filter-pill job counts, which are also narrowed by
+  // the map's current viewport on top of this).
+  const searchedJobList = computed(() => searchJobs(jobs.value, searchQuery.value))
+
   // All jobs matching tech-area filters + search, independent of the map
   // viewport. This is what gets rendered as markers on the map.
-  const filteredJobList = computed(() => {
-    const byTechArea = hasActiveFilters.value
-      ? filterJobs(jobs.value, activeFilterSet.value)
-      : jobs.value
-    return searchJobs(byTechArea, searchQuery.value)
-  })
+  const filteredJobList = computed(() =>
+    hasActiveFilters.value
+      ? filterJobs(searchedJobList.value, activeFilterSet.value)
+      : searchedJobList.value
+  )
 
   // Jobs matching the current filters/search whose location couldn't be
   // geocoded at all (typo, unlisted place, etc.) -- surfaced so data-entry
@@ -84,8 +88,8 @@ export const useJobFilters = (jobs: Ref<Job[]> | ComputedRef<Job[]>) => {
   return {
     filters,
     searchQuery,
-    jobCounts,
     hasActiveFilters,
+    searchedJobList,
     filteredJobList,
     unmappableJobs,
     remoteJobs,

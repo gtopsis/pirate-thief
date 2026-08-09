@@ -107,6 +107,49 @@ describe('HomeView', () => {
     expect(wrapper.text()).not.toContain('Senior Frontend Engineer')
   })
 
+  it("updates each filter pill's job count to reflect the search query, regardless of which pills are toggled", async () => {
+    wrapper = await mountHomeView()
+    await showAllJobs(wrapper)
+
+    // Before searching: one job per tech area (Frontend/Backend/DevOps).
+    expect(wrapper.text()).toContain('Frontend (1)')
+    expect(wrapper.text()).toContain('Backend (1)')
+
+    const searchInput = wrapper.findAll('input[type="search"]')[0]!
+    await searchInput.setValue('Backend')
+    await flushPromises()
+
+    // Narrowing by search alone (no tech-area filter toggled) already
+    // zeroes out Frontend's count and leaves Backend's untouched.
+    expect(wrapper.text()).toContain('Frontend (0)')
+    expect(wrapper.text()).toContain('Backend (1)')
+  })
+
+  it("updates each filter pill's job count to reflect the map's current viewport when synced to it", async () => {
+    wrapper = await mountHomeView()
+    // Default state: synced to the map view ('area' focus) -- do NOT call
+    // showAllJobs(), since the whole point is verifying the map narrows
+    // the counts while synced.
+
+    const jobsMap = wrapper.findComponent(JobsMap)
+
+    // Athens ~[37.98, 23.73]; Thessaloniki ~[40.64, 22.93] -- this range
+    // encloses only Athens (Frontend job), excluding Backend (Thessaloniki).
+    await jobsMap.vm.$emit('bounds-changed', { north: 38.5, south: 37.5, east: 24, west: 23 })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Frontend (1)')
+    expect(wrapper.text()).toContain('Backend (0)')
+
+    // Panning to enclose both updates the counts live, without touching
+    // search/filters at all.
+    await jobsMap.vm.$emit('bounds-changed', { north: 41, south: 37, east: 24, west: 22 })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Frontend (1)')
+    expect(wrapper.text()).toContain('Backend (1)')
+  })
+
   it('gracefully falls back to markers view if heatmap rendering is unavailable', async () => {
     // jsdom doesn't implement canvas 2D contexts, so leaflet.heat can't
     // actually render. This verifies the app degrades gracefully (no

@@ -9,7 +9,8 @@ import { useJobsSource } from '@/composables/useJobsSource'
 import { useJobFilters } from '@/composables/useJobFilters'
 import { useMapView } from '@/composables/useMapView'
 import { scrollJobCardIntoView } from '@/utils/dom'
-import { getJobId } from '@/utils/geo'
+import { filterJobsByBounds, getJobId } from '@/utils/geo'
+import { countJobsByTechArea } from '@/utils/jobs'
 import { formatJobCountText } from '@/utils/text'
 import type { Job } from '@/types/types'
 
@@ -26,8 +27,8 @@ const {
 const {
   filters,
   searchQuery,
-  jobCounts,
   hasActiveFilters,
+  searchedJobList,
   filteredJobList,
   unmappableJobs,
   remoteJobs,
@@ -37,6 +38,7 @@ const {
 
 // === Module 3: map view state (bounds, MapFocus, viewport narrowing, URL sync) ===
 const {
+  mapBounds,
   mapFocus,
   selectedLocationName,
   isViewportFilterAvailable,
@@ -53,6 +55,22 @@ const {
 const activeJobId = ref<string | null>(null)
 const jobsMapRef = ref<InstanceType<typeof JobsMap> | null>(null)
 const bottomSheetRef = ref<InstanceType<typeof BottomSheet> | null>(null)
+
+// Per-tech-area job counts shown on each filter pill -- narrowed by
+// search always, and also by the map's current viewport whenever synced
+// to it ('area'/'point' focus; 'all' means the sync toggle is off, so
+// counts aren't narrowed by the map at all). Deliberately NOT narrowed by
+// which tech-area filters happen to be active: each pill's count answers
+// "how many would match if I picked this one", given the current
+// search/map state alone -- not compounded with whatever's already
+// selected, which is exactly why this builds on searchedJobList (search
+// only) rather than filteredJobList (search + active tech-area filters).
+const jobsForFilterCounts = computed(() =>
+  mapFocus.value === 'all'
+    ? searchedJobList.value
+    : filterJobsByBounds(searchedJobList.value, mapBounds.value)
+)
+const jobCounts = computed(() => countJobsByTechArea(jobsForFilterCounts.value))
 
 // The single "how many jobs am I looking at" label, shared by the
 // desktop sidebar and the mobile bottom sheet's persistent handle (see

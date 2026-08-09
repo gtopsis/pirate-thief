@@ -17,21 +17,36 @@ describe('useJobFilters', () => {
     window.history.replaceState({}, '', '/')
   })
 
-  it('derives jobCounts and filteredJobList from the input jobs, and applies tech-area filters', () => {
+  it('applies tech-area filters to filteredJobList', () => {
     const jobs = ref<Job[]>([
       jobAt({ title: 'Frontend Dev', techArea: 'Frontend', url: 'https://x/1' }),
       jobAt({ title: 'Backend Dev', techArea: 'Backend', url: 'https://x/2' })
     ])
 
-    const { filteredJobList, jobCounts, toggleFilter } = useJobFilters(jobs)
+    const { filteredJobList, toggleFilter } = useJobFilters(jobs)
 
     expect(filteredJobList.value).toHaveLength(2)
-    expect(jobCounts.value.get('Frontend')).toBe(1)
-    expect(jobCounts.value.get('Backend')).toBe(1)
 
     toggleFilter('Frontend')
 
     expect(filteredJobList.value.map((job) => job.title)).toEqual(['Frontend Dev'])
+  })
+
+  it('searchedJobList reflects search only, unaffected by tech-area filters', () => {
+    const jobs = ref<Job[]>([
+      jobAt({ title: 'Frontend Dev', techArea: 'Frontend', url: 'https://x/1' }),
+      jobAt({ title: 'Backend Dev', techArea: 'Backend', url: 'https://x/2' })
+    ])
+
+    const { searchedJobList, filteredJobList, toggleFilter } = useJobFilters(jobs)
+
+    toggleFilter('Frontend')
+
+    // filteredJobList (search + tech-area) is narrowed to just Frontend...
+    expect(filteredJobList.value.map((job) => job.title)).toEqual(['Frontend Dev'])
+    // ...but searchedJobList (search only) still has both, since no
+    // search query is active and it doesn't apply the tech-area filter.
+    expect(searchedJobList.value.map((job) => job.title)).toEqual(['Frontend Dev', 'Backend Dev'])
   })
 
   it('filters by free-text search across company/title/location', () => {
