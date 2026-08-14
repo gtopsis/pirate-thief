@@ -1,5 +1,8 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+import { isRemoteLocation } from '@/utils/geo'
+
+const props = defineProps<{
   title: string
   url: string
   jobArea: string
@@ -11,6 +14,8 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'select'): void
 }>()
+
+const isRemote = computed(() => isRemoteLocation(props.location))
 </script>
 
 <!--
@@ -40,12 +45,19 @@ const emit = defineEmits<{
     </a>
 
     <footer class="flex flex-col md:flex-row w-full md:justify-between gap-1 md:gap-2">
-      <p>
-        at <strong>{{ company }}</strong> - {{ location }}
+      <p class="min-w-0 truncate" :title="`${company} — ${location}`">
+        at <strong>{{ company }}</strong>
+        <span
+          v-if="isRemote"
+          class="ml-1 inline-flex items-center rounded-md bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-500/20"
+        >
+          Remote
+        </span>
+        <span v-else class="text-(--color-text-2)"> · {{ location }}</span>
       </p>
 
       <span
-        class="inline-flex items-center rounded-md bg-gray-200 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-500/10"
+        class="shrink-0 inline-flex items-center rounded-md bg-gray-200 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-500/10"
       >
         {{ jobArea }}
       </span>
