@@ -5,7 +5,6 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
-import 'leaflet.heat'
 import type { Job } from '@/types/types'
 import { GREECE_CENTER, GREECE_DEFAULT_ZOOM } from '@/utils/geo'
 import type { MapBounds } from '@/utils/geo'
@@ -14,6 +13,7 @@ import { createMarkerClusterLayer } from '@/utils/markerClusterLayer'
 import { createHeatmapLayer } from '@/utils/heatmapLayer'
 import { createDarkModeTileLayer } from '@/utils/darkModeTiles'
 import { useMarkerHighlight } from '@/composables/useMarkerHighlight'
+import { debounce } from '@/utils/debounce'
 
 export interface MapView {
   lat: number
@@ -139,32 +139,47 @@ const refreshJobLayers = (): void => {
   markerClusterLayer.update(props.jobs)
   updateRemoteLayer()
   if (viewMode.value === 'heatmap') {
-    heatmapLayer.update(props.jobs)
+    heatmapLayer.update(props.jobs).catch((err: unknown) => {
+      console.error('Failed to update heatmap layer.', err)
+    })
   }
 }
 
 /**
  * Shows either the clustered pin markers or a density heatmap. Heatmap
- * rendering relies on 2D canvas support; if unavailable or it fails for
- * any reason, falls back to the marker view instead of crashing the app.
+ * rendering relies on 2D canvas support (and, on first use, on the
+ * `leaflet.heat` plugin's dynamic import resolving -- see
+ * heatmapLayer.ts); if unavailable or it fails for any reason, falls
+ * back to the marker view instead of crashing the app.
  */
-const applyViewMode = (): void => {
+const applyViewMode = async (): Promise<void> => {
   if (!map) return
 
   if (viewMode.value === 'heatmap') {
     try {
-      heatmapLayer.update(props.jobs)
+      await heatmapLayer.update(props.jobs)
+      // The component may have unmounted (map torn down to null, in
+      // onUnmounted below) while the above was in flight -- re-check
+      // before touching `map` again. TS's flow analysis can't see across
+      // that closure mutation, so it (wrongly) considers this redundant.
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!map) return
+
       markerClusterLayer.detachFrom(map)
       heatmapLayer.attachTo(map)
       updateRemoteLayer()
       return
     } catch (err) {
       console.error('Heatmap view is unavailable, falling back to markers.', err)
-      heatmapLayer.detachFrom(map)
       viewMode.value = 'markers'
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- see above
+      if (!map) return
+      heatmapLayer.detachFrom(map)
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- see above
+  if (!map) return
   heatmapLayer.detachFrom(map)
   markerClusterLayer.attachTo(map)
   updateRemoteLayer()
@@ -172,7 +187,7 @@ const applyViewMode = (): void => {
 
 const toggleViewMode = (): void => {
   viewMode.value = viewMode.value === 'markers' ? 'heatmap' : 'markers'
-  applyViewMode()
+  void applyViewMode()
 }
 
 let hasFitInitialBounds = false
@@ -198,6 +213,14 @@ const syncMapForJobsChange = (): void => {
   fitToInitialJobsOnce()
 }
 
+// Rebuilding every marker/popup (and the remote-jobs overlay's whole
+// country-boundary polygon) is expensive enough to visibly stutter typing
+// in the search box, which narrows `jobs` on every keystroke -- so the
+// watcher below coalesces a rapid burst of changes into a single rebuild
+// once it pauses, instead of rebuilding after every single one.
+const JOBS_CHANGE_DEBOUNCE_MS = 200
+const debouncedSyncMapForJobsChange = debounce(syncMapForJobsChange, JOBS_CHANGE_DEBOUNCE_MS)
+
 const flyToJob = (jobId: string): void => {
   const marker = markersByJobId.get(jobId)
   if (!map || !marker) return
@@ -215,7 +238,7 @@ onMounted(() => {
 
   initMap(mapContainer.value)
   refreshJobLayers()
-  applyViewMode()
+  void applyViewMode()
 
   // If jobs are already available at mount time, fit to them now --
   // otherwise the jobs-changed watcher below picks this up once they
@@ -232,6 +255,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  debouncedSyncMapForJobsChange.cancel()
   stopDarkModeListener?.()
   resizeObserver?.disconnect()
   if (map) {
@@ -248,7 +272,11 @@ onUnmounted(() => {
   }
 })
 
-watch([() => props.jobs, () => props.remoteJobs], syncMapForJobsChange, { deep: true })
+// Not `{ deep: true }`: `jobs`/`remoteJobs` are always new array
+// references from upstream `computed()`s (never mutated in place), so a
+// shallow watch already sees every change -- deep-comparing every Job
+// object inside them on each keystroke would just add unnecessary work.
+watch([() => props.jobs, () => props.remoteJobs], debouncedSyncMapForJobsChange)
 
 watch(() => props.highlightedJobId, applyHighlight)
 </script>

@@ -180,6 +180,12 @@ describe('HomeView', () => {
     expect(toggle.text()).toBe('Heatmap')
 
     await toggle.trigger('click')
+    // The heatmap layer's `leaflet.heat` plugin is loaded via a dynamic
+    // import (see heatmapLayer.ts) before its (here, failing) canvas
+    // setup even runs -- a real wait (not just microtask flushes) lets
+    // that import genuinely resolve before asserting on the fallback.
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    await flushPromises()
 
     expect(toggle.text()).toBe('Heatmap')
     expect(consoleErrorSpy).toHaveBeenCalledWith(

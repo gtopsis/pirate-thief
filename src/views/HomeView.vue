@@ -9,6 +9,7 @@ import { useJobsSource } from '@/composables/useJobsSource'
 import { useJobFilters } from '@/composables/useJobFilters'
 import { useMapView } from '@/composables/useMapView'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { useIsMobileViewport } from '@/composables/useIsMobileViewport'
 import { scrollJobCardIntoView } from '@/utils/dom'
 import { filterJobsByBounds, getJobId } from '@/utils/geo'
 import { countJobsByTechArea } from '@/utils/jobs'
@@ -55,6 +56,13 @@ const {
 const activeJobId = ref<string | null>(null)
 const jobsMapRef = ref<InstanceType<typeof JobsMap> | null>(null)
 const bottomSheetRef = ref<InstanceType<typeof BottomSheet> | null>(null)
+
+// Mirrors BottomSheet.vue's own use of this: the desktop sidebar's
+// JobPanel (below) is only ever relevant on desktop, so it's gated
+// behind `v-if="!isMobile"` too -- otherwise both it and the mobile
+// bottom sheet's copy would be mounted (and re-rendering on every
+// keystroke/filter/pan) regardless of which one is actually visible.
+const isMobile = useIsMobileViewport()
 
 // Each pill's count answers "how many would match if I picked this one",
 // given the current search/map state alone -- so it builds on
@@ -171,6 +179,7 @@ onMounted(async () => {
            one persistent column alongside the map (the app's only other
            top-level region on desktop -- see the main view below). -->
       <aside
+        v-if="!isMobile"
         class="hidden md:flex md:flex-col md:w-[420px] lg:w-[460px] md:h-full md:max-h-full md:min-h-0 shrink-0 border-r border-(--color-divider) bg-(--color-bg)"
       >
         <div class="shrink-0 flex flex-col gap-1 px-4 py-3 border-b border-(--color-divider)">

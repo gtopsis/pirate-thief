@@ -1,8 +1,36 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BottomSheet from '@/components/BottomSheet.vue'
 
+/** A minimal fake MediaQueryList that supports the change-listener API `watchMobileViewport` needs. */
+const createFakeMediaQueryList = (initialMatches: boolean) => {
+  let matches = initialMatches
+  const listeners = new Set<(event: MediaQueryListEvent) => void>()
+
+  return {
+    get matches() {
+      return matches
+    },
+    addEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
+      listeners.add(listener)
+    },
+    removeEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
+      listeners.delete(listener)
+    },
+    simulateChange(newMatches: boolean): void {
+      matches = newMatches
+      for (const listener of listeners) {
+        listener({ matches: newMatches } as MediaQueryListEvent)
+      }
+    }
+  }
+}
+
 describe('BottomSheet', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('starts collapsed', () => {
     const wrapper = mount(BottomSheet, { props: { jobCountText: '3 jobs' } })
 
@@ -40,5 +68,51 @@ describe('BottomSheet', () => {
     vm.collapse()
     await wrapper.vm.$nextTick()
     expect(wrapper.find('button').attributes('aria-expanded')).toBe('false')
+  })
+
+  describe('slot content mounting (perf: avoid mounting the mobile job list on desktop)', () => {
+    it('does not mount the slot content at all when not on a mobile viewport', async () => {
+      vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(createFakeMediaQueryList(false)))
+
+      const wrapper = mount(BottomSheet, {
+        props: { jobCountText: '3 jobs' },
+        slots: { default: '<p class="slot-marker">panel content</p>' }
+      })
+      const vm = wrapper.vm as unknown as { expand: () => void }
+      vm.expand()
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.find('.slot-marker').exists()).toBe(false)
+    })
+
+    it('mounts the slot content when on a mobile viewport', () => {
+      vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(createFakeMediaQueryList(true)))
+
+      const wrapper = mount(BottomSheet, {
+        props: { jobCountText: '3 jobs' },
+        slots: { default: '<p class="slot-marker">panel content</p>' }
+      })
+
+      expect(wrapper.find('.slot-marker').exists()).toBe(true)
+    })
+
+    it('mounts/unmounts the slot content live if the viewport crosses the breakpoint', async () => {
+      const fakeQuery = createFakeMediaQueryList(false)
+      vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(fakeQuery))
+
+      const wrapper = mount(BottomSheet, {
+        props: { jobCountText: '3 jobs' },
+        slots: { default: '<p class="slot-marker">panel content</p>' }
+      })
+      expect(wrapper.find('.slot-marker').exists()).toBe(false)
+
+      fakeQuery.simulateChange(true)
+      await wrapper.vm.$nextTick()
+      expect(wrapper.find('.slot-marker').exists()).toBe(true)
+
+      fakeQuery.simulateChange(false)
+      await wrapper.vm.$nextTick()
+      expect(wrapper.find('.slot-marker').exists()).toBe(false)
+    })
   })
 })

@@ -17,18 +17,31 @@ const buildHeatPoints = (jobs: readonly Job[]): L.HeatLatLngTuple[] => {
  * clustered marker view. Kept as its own unit so the map component
  * doesn't need to know about leaflet.heat's API or its failure modes
  * directly.
+ *
+ * The `leaflet.heat` plugin itself is only ever imported the first time
+ * this layer is actually used (`update()`'s first call) -- most sessions
+ * never open heatmap view at all, so importing and running the plugin's
+ * side-effect setup eagerly at app startup would be pure waste for them.
  */
 export const createHeatmapLayer = () => {
   let heatLayer: L.HeatLayer | null = null
+  let heatPluginLoaded: Promise<void> | null = null
 
-  const update = (jobs: readonly Job[]): void => {
+  const ensureHeatPluginLoaded = (): Promise<void> => {
+    heatPluginLoaded ??= import('leaflet.heat').then(() => undefined)
+    return heatPluginLoaded
+  }
+
+  const update = async (jobs: readonly Job[]): Promise<void> => {
     const points = buildHeatPoints(jobs)
 
     if (heatLayer) {
       heatLayer.setLatLngs(points)
-    } else {
-      heatLayer = L.heatLayer(points, { radius: 28, blur: 22, maxZoom: 12 })
+      return
     }
+
+    await ensureHeatPluginLoaded()
+    heatLayer = L.heatLayer(points, { radius: 28, blur: 22, maxZoom: 12 })
   }
 
   const attachTo = (map: L.Map): void => {

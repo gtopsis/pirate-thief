@@ -28,10 +28,29 @@ export const createRemoteJobsLayer = (callbacks: RemoteJobsLayerCallbacks) => {
   let boundaryLayer: L.GeoJSON | null = null
   let marker: L.Marker | null = null
 
+  // The country outline itself never changes -- built lazily, once, the
+  // first time it's actually needed, then only attached/detached from
+  // the map (cheap) based on visibility from then on. Re-parsing and
+  // re-rendering this ~900-point polygon on every `update()` call (e.g.
+  // on every keystroke while searching, since remoteJobs narrows too)
+  // was measurably wasteful for something that's visually static.
+  const getBoundaryLayer = (): L.GeoJSON => {
+    boundaryLayer ??= L.geoJSON(greeceBoundary as Geometry, {
+      interactive: false,
+      style: {
+        fillColor: '#8b5cf6',
+        fillOpacity: 0.12,
+        color: '#8b5cf6',
+        weight: 1,
+        opacity: 0.35
+      }
+    })
+    return boundaryLayer
+  }
+
   const clear = (map: L.Map): void => {
-    if (boundaryLayer) {
+    if (boundaryLayer && map.hasLayer(boundaryLayer)) {
       map.removeLayer(boundaryLayer)
-      boundaryLayer = null
     }
     if (marker) {
       map.removeLayer(marker)
@@ -49,16 +68,7 @@ export const createRemoteJobsLayer = (callbacks: RemoteJobsLayerCallbacks) => {
     clear(map)
     if (!isVisible || remoteJobs.length === 0) return
 
-    boundaryLayer = L.geoJSON(greeceBoundary as Geometry, {
-      interactive: false,
-      style: {
-        fillColor: '#8b5cf6',
-        fillOpacity: 0.12,
-        color: '#8b5cf6',
-        weight: 1,
-        opacity: 0.35
-      }
-    }).addTo(map)
+    getBoundaryLayer().addTo(map)
 
     const icon = L.divIcon({
       className: 'custom-marker',

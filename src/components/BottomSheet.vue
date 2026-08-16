@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useVerticalDragGesture } from '@/composables/useVerticalDragGesture'
+import { useIsMobileViewport } from '@/composables/useIsMobileViewport'
 
 const SNAP_POINTS = {
   collapsed: 0.12,
@@ -22,6 +23,14 @@ const props = defineProps<{
 }>()
 
 const snap = ref<SnapPoint>('collapsed')
+
+// Not just cosmetic: this sheet's slot content (JobPanel + JobList, up to
+// ~300 cards) is only ever relevant on mobile (the root element is
+// `md:hidden`) -- gating it behind `v-if="isMobile"` in the template
+// keeps it from being mounted (and re-rendering on every keystroke/
+// filter/pan alongside the desktop sidebar's own copy) at all on
+// desktop, instead of merely being CSS-hidden while still fully mounted.
+const isMobile = useIsMobileViewport()
 
 /**
  * The Visual Viewport API tracks the *currently visible* viewport height,
@@ -157,8 +166,10 @@ defineExpose({
       search text, etc.) survives collapsing/expanding -- it's just hidden
       and non-interactive while collapsed, instead of being clipped to a
       sliver but still technically focusable/scrollable underneath.
+      Gated by `isMobile` too (see its declaration above) so the content
+      isn't mounted at all outside of mobile.
     -->
-    <div v-show="isExpanded" class="flex-1 min-h-0">
+    <div v-if="isMobile" v-show="isExpanded" class="flex-1 min-h-0">
       <slot :is-full="isFull" />
     </div>
   </div>

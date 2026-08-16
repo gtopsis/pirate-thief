@@ -15,6 +15,12 @@ const jobAt = (location: string, url: string): Job => ({
 const ATHENS_JOB = jobAt('Athens', 'https://x/1')
 const THESSALONIKI_JOB = jobAt('Thessaloniki', 'https://x/2')
 
+// Matches JobsMap.vue's JOBS_CHANGE_DEBOUNCE_MS: the jobs/remoteJobs watcher
+// debounces its (expensive) map rebuild, so tests that change `jobs` via
+// `setProps` need to wait this long afterwards to see its effect.
+const awaitJobsChangeDebounce = (): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, 250))
+
 describe('JobsMap', () => {
   let wrapper: VueWrapper | undefined
 
@@ -39,14 +45,14 @@ describe('JobsMap', () => {
     // types a search query while synced to the map: `jobs` narrows, but
     // the viewport must NOT reset/zoom out because of it.
     await wrapper.setProps({ jobs: [ATHENS_JOB] })
-    await wrapper.vm.$nextTick()
+    await awaitJobsChangeDebounce()
 
     expect(fitBoundsSpy).toHaveBeenCalledTimes(1)
 
     // Narrowing further (e.g. a search query matching nothing) must not
     // trigger a fit either.
     await wrapper.setProps({ jobs: [] })
-    await wrapper.vm.$nextTick()
+    await awaitJobsChangeDebounce()
 
     expect(fitBoundsSpy).toHaveBeenCalledTimes(1)
   })
@@ -66,7 +72,7 @@ describe('JobsMap', () => {
     expect(fitBoundsSpy).not.toHaveBeenCalled()
 
     await wrapper.setProps({ jobs: [ATHENS_JOB] })
-    await wrapper.vm.$nextTick()
+    await awaitJobsChangeDebounce()
 
     expect(fitBoundsSpy).not.toHaveBeenCalled()
   })
