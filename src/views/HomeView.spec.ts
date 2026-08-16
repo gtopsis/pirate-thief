@@ -26,7 +26,6 @@ const REMOTE_JOB = ['Gamma Inc', 'DevOps Engineer', 'Remote', 'DevOps', 'https:/
 
 const DEFAULT_JOB_ROWS = [FRONTEND_JOB, BACKEND_JOB, REMOTE_JOB]
 
-/** Stubs `fetch` to resolve with a spreadsheet response containing the given job rows. */
 const stubJobsResponse = (jobRows: string[][]): void => {
   vi.stubGlobal(
     'fetch',
@@ -42,7 +41,6 @@ const stubJobsResponse = (jobRows: string[][]): void => {
   )
 }
 
-/** Mounts HomeView and waits for the initial job fetch to settle. */
 const mountHomeView = async (): Promise<VueWrapper> => {
   const wrapper = mount(HomeView, { attachTo: document.body })
   await flushPromises()
@@ -82,16 +80,9 @@ describe('HomeView', () => {
     wrapper = await mountHomeView()
     await showAllJobs(wrapper)
 
-    // Job data was fetched and parsed
     expect(window.fetch).toHaveBeenCalled()
-
-    // Map container is present
     expect(wrapper.find('.app-shell').exists()).toBe(true)
-
-    // Desktop side panel and mobile bottom sheet both render a job panel
     expect(wrapper.findAll('article').length).toBeGreaterThan(0)
-
-    // The fetched job titles appear somewhere in the rendered output
     expect(wrapper.text()).toContain('Senior Frontend Engineer')
   })
 
@@ -111,7 +102,6 @@ describe('HomeView', () => {
     wrapper = await mountHomeView()
     await showAllJobs(wrapper)
 
-    // Before searching: one job per tech area (Frontend/Backend/DevOps).
     expect(wrapper.text()).toContain('Frontend (1)')
     expect(wrapper.text()).toContain('Backend (1)')
 
@@ -119,8 +109,6 @@ describe('HomeView', () => {
     await searchInput.setValue('Backend')
     await flushPromises()
 
-    // Narrowing by search alone (no tech-area filter toggled) already
-    // zeroes out Frontend's count and leaves Backend's untouched.
     expect(wrapper.text()).toContain('Frontend (0)')
     expect(wrapper.text()).toContain('Backend (1)')
   })
@@ -141,8 +129,6 @@ describe('HomeView', () => {
     expect(wrapper.text()).toContain('Frontend (1)')
     expect(wrapper.text()).toContain('Backend (0)')
 
-    // Panning to enclose both updates the counts live, without touching
-    // search/filters at all.
     await jobsMap.vm.$emit('bounds-changed', { north: 41, south: 37, east: 24, west: 22 })
     await flushPromises()
 
@@ -162,14 +148,10 @@ describe('HomeView', () => {
     await jobsMap.vm.$emit('bounds-changed', { north: 39.5, south: 37.5, east: 24, west: 21.5 })
     await flushPromises()
 
-    // The list contains both the in-view city's job and the remote job...
     expect(wrapper.text()).toContain('Senior Frontend Engineer')
     expect(wrapper.text()).toContain('DevOps Engineer')
-    // ...but not the out-of-view city's job.
     expect(wrapper.text()).not.toContain('Backend Engineer')
 
-    // Filter pill counts agree: Frontend and DevOps (remote) are both
-    // represented, Backend (Thessaloniki-only) is zeroed out.
     expect(wrapper.text()).toContain('Frontend (1)')
     expect(wrapper.text()).toContain('DevOps (1)')
     expect(wrapper.text()).toContain('Backend (0)')
@@ -199,7 +181,6 @@ describe('HomeView', () => {
 
     await toggle.trigger('click')
 
-    // Falls back to markers view rather than crashing
     expect(toggle.text()).toBe('Heatmap')
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Heatmap view is unavailable'),
@@ -217,13 +198,10 @@ describe('HomeView', () => {
 
     const fetchCallsBefore = (window.fetch as ReturnType<typeof vi.fn>).mock.calls.length
 
-    // A bare "h" (no modifier) must not toggle the heatmap view...
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h' }))
     await flushPromises()
     expect(consoleErrorSpy).not.toHaveBeenCalled()
 
-    // ...but Alt+H does (and jsdom's lack of canvas support makes it log
-    // and fall back, proving the toggle actually ran).
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', altKey: true }))
     await flushPromises()
     expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -231,12 +209,10 @@ describe('HomeView', () => {
       expect.anything()
     )
 
-    // A bare "r" must not trigger a refresh...
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }))
     await flushPromises()
     expect((window.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBe(fetchCallsBefore)
 
-    // ...but Alt+R does.
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', altKey: true }))
     await flushPromises()
     expect((window.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
@@ -268,8 +244,6 @@ describe('HomeView', () => {
     expect(wrapper.text()).toContain('1 job')
     expect(wrapper.text()).not.toContain('2 jobs')
 
-    // Panning to a wider view that also encloses Thessaloniki (Backend
-    // job) updates the count live, without touching search/filters at all.
     await jobsMap.vm.$emit('bounds-changed', { north: 41, south: 37, east: 24, west: 22 })
     await flushPromises()
     expect(wrapper.text()).toContain('2 jobs')
@@ -288,10 +262,6 @@ describe('HomeView', () => {
     wrapper = await mountHomeView()
     await showAllJobs(wrapper)
 
-    // Only the unknown/typo'd location counts as unmappable -- REMOTE_JOB
-    // is a legitimate remote listing, surfaced separately (see below).
-    // This is plain, always-visible text (no expand/collapse) -- the
-    // job's own list card (checked next) is what shows its details.
     expect(wrapper.text()).toContain("1 job couldn't be placed on the map")
     expect(wrapper.text()).toContain('Definitely Not A Known City')
   })
@@ -299,9 +269,7 @@ describe('HomeView', () => {
   it('surfaces remote jobs as a distinct nationwide overlay, not as an unmappable/error job', async () => {
     wrapper = await mountHomeView()
 
-    // REMOTE_JOB (from DEFAULT_JOB_ROWS) is not counted as an error...
     expect(wrapper.text()).not.toContain("couldn't be placed on the map")
-    // ...but is surfaced via its own notice instead.
     expect(wrapper.text()).toContain('1 remote job shown as a nationwide overlay on the map')
   })
 
@@ -320,20 +288,16 @@ describe('HomeView', () => {
     await jobsMap.vm.$emit('marker-click', [athensJob])
     await flushPromises()
 
-    // Narrowed to just the clicked location...
     expect(wrapper.text()).toContain('Senior Frontend Engineer')
     expect(wrapper.text()).not.toContain('Backend Engineer')
-    // ...and surfaced as a removable pill in the active-filters bar.
     const locationPill = wrapper.find('[aria-label="Reset to the default map view"]')
     expect(locationPill.exists()).toBe(true)
     expect(locationPill.text()).toContain('Athens')
 
-    // Clicking the pill reverts to the default (area) focus.
     await locationPill.trigger('click')
     await flushPromises()
     expect(wrapper.find('[aria-label="Reset to the default map view"]').exists()).toBe(false)
 
-    // Re-select the location, then confirm panning the map also reverts it.
     await jobsMap.vm.$emit('marker-click', [athensJob])
     await flushPromises()
     expect(wrapper.find('[aria-label="Reset to the default map view"]').exists()).toBe(true)
@@ -364,7 +328,6 @@ describe('HomeView', () => {
     expect(wrapper.text()).toContain('Senior Frontend Engineer')
     expect(wrapper.text()).toContain('Backend Engineer')
 
-    // Re-enabling sync resumes exactly that marker's selection.
     const syncToggle = wrapper.findAll('input[type="checkbox"]')[0]!
     await syncToggle.setValue(true)
     await flushPromises()

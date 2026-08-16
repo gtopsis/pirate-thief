@@ -6,12 +6,9 @@ import { googleSheetsJobsSource as jobsSource } from '@/sources/googleSheets/goo
 /**
  * Owns fetching and transforming job data via the active JobsSourceAdapter
  * (currently googleSheetsJobsSource, see src/sources) -- this is the only
- * module in the app aware of *which* source that is or how it's shaped on
- * the wire. Everything downstream (filtering, the map, etc.) just sees a
- * reactive `Job[]` list plus loading/error state, and can `refresh()`
- * without knowing anything about the underlying source. To point the app
- * at a different data source, swap the import above for a different
- * JobsSourceAdapter implementation -- nothing else here needs to change.
+ * module aware of *which* source that is or how it's shaped on the wire.
+ * To point the app at a different data source, swap the import above for
+ * a different JobsSourceAdapter implementation.
  */
 export const useJobsSource = () => {
   const { isLoading, error, data, fetchData } = useFetch(jobsSource.url)

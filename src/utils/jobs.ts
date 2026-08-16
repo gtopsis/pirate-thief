@@ -1,8 +1,5 @@
 import type { Job } from '@/types/types'
 
-/**
- * Build a Set of active filter names from a filters Map
- */
 export const buildActiveFilterSet = (filters: Map<string, boolean>): Set<string> => {
   const active = new Set<string>()
   for (const [key, value] of filters) {
@@ -11,17 +8,11 @@ export const buildActiveFilterSet = (filters: Map<string, boolean>): Set<string>
   return active
 }
 
-/**
- * Filter jobs based on active tech area filters
- */
 export const filterJobs = (jobs: Job[], activeFilters: Set<string>): Job[] => {
   if (activeFilters.size === 0) return jobs
   return jobs.filter((job) => activeFilters.has(job.techArea))
 }
 
-/**
- * Filter jobs by a free-text search query, matching company, title and location.
- */
 export const searchJobs = (jobs: Job[], query: string): Job[] => {
   const normalized = query.trim().toLowerCase()
   if (!normalized) return jobs
@@ -31,9 +22,6 @@ export const searchJobs = (jobs: Job[], query: string): Job[] => {
   )
 }
 
-/**
- * Build initial filters Map from jobs, preserving existing filter states
- */
 export const buildFiltersFromJobs = (
   jobs: Job[],
   existingFilters: Map<string, boolean>
@@ -50,9 +38,6 @@ export const buildFiltersFromJobs = (
   return newFilters
 }
 
-/**
- * Toggle a filter value in the Map, returning a new Map
- */
 export const toggleFilterInMap = (
   filters: Map<string, boolean>,
   name: string
@@ -65,9 +50,6 @@ export const toggleFilterInMap = (
   return newFilters
 }
 
-/**
- * Count jobs per tech area
- */
 export const countJobsByTechArea = (jobs: Job[]): Map<string, number> => {
   const counts = new Map<string, number>()
 

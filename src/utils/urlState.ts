@@ -1,5 +1,3 @@
-// === Shared URL read/write helpers ===
-
 const readUrlParams = (): URLSearchParams => new URLSearchParams(window.location.search)
 
 /**
@@ -14,12 +12,8 @@ const writeUrlParams = (mutate: (params: URLSearchParams) => void): void => {
   window.history.replaceState({}, '', url.toString())
 }
 
-// === Filter State ===
 const FILTER_PARAM = 'filters'
 
-/**
- * Parse active filters from URL search params
- */
 export const getFiltersFromUrl = (): Set<string> => {
   const filterParam = readUrlParams().get(FILTER_PARAM)
 
@@ -33,9 +27,6 @@ export const getFiltersFromUrl = (): Set<string> => {
   )
 }
 
-/**
- * Update URL with active filters (without page reload)
- */
 export const setFiltersInUrl = (activeFilters: Set<string>): void => {
   writeUrlParams((params) => {
     if (activeFilters.size === 0) {
@@ -51,9 +42,6 @@ export const setFiltersInUrl = (activeFilters: Set<string>): void => {
   })
 }
 
-/**
- * Apply URL filters to a filters Map
- */
 export const applyUrlFiltersToMap = (
   filters: Map<string, boolean>,
   urlFilters: Set<string>
@@ -67,7 +55,6 @@ export const applyUrlFiltersToMap = (
   return newFilters
 }
 
-// === Map View State ===
 const MAP_LAT_PARAM = 'lat'
 const MAP_LNG_PARAM = 'lng'
 const MAP_ZOOM_PARAM = 'z'
@@ -78,10 +65,6 @@ export interface UrlMapView {
   zoom: number
 }
 
-/**
- * Parse a persisted map center/zoom from the URL search params, if present
- * and valid.
- */
 export const getMapViewFromUrl = (): UrlMapView | null => {
   const params = readUrlParams()
   const rawLat = params.get(MAP_LAT_PARAM)
@@ -104,10 +87,6 @@ export const getMapViewFromUrl = (): UrlMapView | null => {
   return { lat, lng, zoom }
 }
 
-/**
- * Persist the current map center/zoom in the URL (without page reload),
- * so the view can be shared/restored.
- */
 export const setMapViewInUrl = (view: UrlMapView): void => {
   writeUrlParams((params) => {
     params.set(MAP_LAT_PARAM, view.lat.toFixed(4))

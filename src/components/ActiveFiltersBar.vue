@@ -14,20 +14,16 @@ const emit = defineEmits<{
   (e: 'clear-all'): void
 }>()
 
-// Tech-area filters already have their own always-visible, clickable-pill
-// UI (FilterList) that shows every option (active or not) and toggles on
-// a second click -- duplicating just the *active* ones here would be a
-// second, redundant place to look. Same for search: the query is already
-// visible in the search input itself. This bar exists only for state that
-// has nowhere else to be seen: the current Map Focus (see useMapView),
-// plus a single "Clear all" reset covering everything (search, filters,
-// and Map Focus) at once.
+// This bar exists only for state that has nowhere else to be seen: tech-
+// area filters and search already have their own always-visible UI
+// (FilterList, the search input), so duplicating them here would be
+// redundant. Shows the current Map Focus (see useMapView) plus a single
+// "Clear all" reset covering everything at once.
 const hasSearch = computed(() => props.searchQuery.trim().length > 0)
 const hasActiveFilter = computed(() => Array.from(props.filters.values()).some(Boolean))
 
 // Deliberately null for 'area' (the default) -- only deviations from the
-// default map/list relationship are worth calling out here. 'point' and
-// 'all' are both explicit overrides the user took an action to reach.
+// default map/list relationship are worth calling out here.
 const mapFocusPillLabel = computed(() => {
   if (props.mapFocus === 'point') return `📍 ${props.selectedLocationName ?? ''}`
   if (props.mapFocus === 'all') return '🌐 All jobs (map ignored)'

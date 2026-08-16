@@ -22,7 +22,6 @@ const NUMBER_OF_HEADER_ROWS = 5
 // [company, title, location, techArea, url]
 const NUMBER_OF_JOB_COLUMNS = 5
 
-/** Maps a single raw spreadsheet row to a Job. */
 const rowToJob = (row: string[]): Job => ({
   company: row[0]!,
   title: row[1]!,

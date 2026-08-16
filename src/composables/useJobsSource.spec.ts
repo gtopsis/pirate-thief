@@ -9,7 +9,6 @@ const HEADER_ROWS = Array.from({ length: 5 }, () => ['', '', '', '', ''])
 const FRONTEND_JOB = ['Acme Corp', 'Senior Frontend Engineer', 'Athens', 'Frontend', 'https://x/1']
 const BACKEND_JOB = ['Beta Ltd', 'Backend Engineer', 'Thessaloniki', 'Backend', 'https://x/2']
 
-/** Stubs `fetch` to resolve with a spreadsheet response containing the given job rows. */
 const stubJobsResponse = (jobRows: string[][]): void => {
   vi.stubGlobal(
     'fetch',
