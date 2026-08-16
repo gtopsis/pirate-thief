@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { jobsListUrl, jobsSourceName } from '@/utils'
+import { jobsListUrl, jobsSourceName } from '@/config'
 
 const APP_NAME = 'Greek Tech Jobs Map'
 const APP_DESCRIPTION = 'A simple job listing app to showcase the public Jobs list by'

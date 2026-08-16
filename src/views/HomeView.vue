@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import AppHero from '@/components/AppHero.vue'
 import JobPanel from '@/components/JobPanel.vue'
 import JobsMap from '@/components/JobsMap.vue'
@@ -8,6 +8,7 @@ import RefreshButton from '@/components/RefreshButton.vue'
 import { useJobsSource } from '@/composables/useJobsSource'
 import { useJobFilters } from '@/composables/useJobFilters'
 import { useMapView } from '@/composables/useMapView'
+import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { scrollJobCardIntoView } from '@/utils/dom'
 import { filterJobsByBounds, getJobId } from '@/utils/geo'
 import { countJobsByTechArea } from '@/utils/jobs'
@@ -51,20 +52,14 @@ const {
   clearMapFocusOverride
 } = useMapView(filteredJobList)
 
-// === Cross-cutting: job selection (shared between the list and the map) ===
 const activeJobId = ref<string | null>(null)
 const jobsMapRef = ref<InstanceType<typeof JobsMap> | null>(null)
 const bottomSheetRef = ref<InstanceType<typeof BottomSheet> | null>(null)
 
-// Per-tech-area job counts shown on each filter pill -- narrowed by
-// search always, and also by the map's current viewport whenever synced
-// to it ('area'/'point' focus; 'all' means the sync toggle is off, so
-// counts aren't narrowed by the map at all). Deliberately NOT narrowed by
-// which tech-area filters happen to be active: each pill's count answers
-// "how many would match if I picked this one", given the current
-// search/map state alone -- not compounded with whatever's already
-// selected, which is exactly why this builds on searchedJobList (search
-// only) rather than filteredJobList (search + active tech-area filters).
+// Each pill's count answers "how many would match if I picked this one",
+// given the current search/map state alone -- so it builds on
+// searchedJobList (search only), not filteredJobList (search + active
+// tech-area filters), and isn't narrowed by which filters are active.
 const jobsForFilterCounts = computed(() =>
   mapFocus.value === 'all'
     ? searchedJobList.value
@@ -73,24 +68,13 @@ const jobsForFilterCounts = computed(() =>
 const jobCounts = computed(() => countJobsByTechArea(jobsForFilterCounts.value))
 
 // The single "how many jobs am I looking at" label, shared by the
-// desktop sidebar and the mobile bottom sheet's persistent handle (see
-// JobPanel's/BottomSheet's jobCountText props) -- computed once here so
-// there's exactly one such message, worded one way. Tracks panelJobList
-// (not filteredJobList): when synced to the map ('area'/'point' focus),
-// that's exactly what's currently presented on the map/list, so this
-// updates live as the map is panned/zoomed, not just when search/filters
-// change. When unsynced ('all' focus), panelJobList already equals
-// filteredJobList, so this naturally shows everything in that case. The
-// remote and couldn't-be-placed subsets are separately, plainly called
-// out right below it (see RemoteJobsNotice/UnmappedLocationsNotice) --
-// those are pan/zoom-independent (remote/unmappable jobs have no
-// coordinates to be in or out of view), so they intentionally keep
-// tracking filteredJobList instead.
+// desktop sidebar and the mobile bottom sheet's persistent handle.
+// Tracks panelJobList (not filteredJobList) so it updates live as the
+// map is panned/zoomed while synced, not just on search/filter changes.
 const jobCountText = computed(() => formatJobCountText(panelJobList.value.length))
 
 // Grouped so the desktop panel and mobile bottom sheet can both bind the
-// same JobPanel props with a single `v-bind`, instead of repeating every
-// prop at both call sites.
+// same JobPanel props with a single `v-bind`.
 const jobPanelProps = computed(() => ({
   jobs: panelJobList.value,
   jobCountText: jobCountText.value,
@@ -112,12 +96,11 @@ const handleJobHover = (jobId: string | null): void => {
 }
 
 const handleJobSelect = (jobId: string): void => {
-  // Avoid redundant work (and, more importantly, an unwanted map pan) when
-  // this job is already the active one -- e.g. scrollJobCardIntoView's
-  // focus() call (for keyboard/screen-reader users) re-triggers this same
-  // handler for a job a marker click just selected; re-flying to it would
-  // fire a bounds-changed event that immediately reverts Point map focus
-  // right after selectLocation() set it.
+  // Avoid an unwanted map pan when this job is already active -- e.g.
+  // scrollJobCardIntoView's focus() call re-triggers this handler for a
+  // job a marker click just selected; re-flying to it would fire a
+  // bounds-changed event that immediately reverts Point map focus right
+  // after selectLocation() set it.
   if (activeJobId.value === jobId) return
 
   activeJobId.value = jobId
@@ -137,54 +120,25 @@ const handleMarkerClick = (jobs: Job[]): void => {
 
 const handleRefresh = (): Promise<void> => refresh()
 
-// Resets search, tech-area filters, and map focus back to their
-// defaults in one action -- powers both the "Clear all" action in the
-// active-filters bar and the empty-state "Clear all filters" button.
+// Powers both the "Clear all" action in the active-filters bar and the
+// empty-state "Clear all filters" button.
 const clearEverything = (): void => {
   clearAllFilters()
   clearMapFocusOverride()
 }
 
-// === Keyboard Navigation ===
-// 'r'/'h' require Alt so they're exempt from WCAG 2.1.4 (Character Key
-// Shortcuts), which applies only to shortcuts using nothing but a bare
-// letter/punctuation/number/symbol key -- Escape is a named
-// (non-printable) key, so it isn't covered by 2.1.4 and is left bare,
-// matching its conventional "cancel/clear" meaning.
-const handleKeydown = (event: KeyboardEvent): void => {
-  // Ignore if user is typing in an input
-  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-    return
+useKeyboardShortcuts([
+  { key: 'r', altKey: true, isEnabled: () => !isLoading.value, handler: handleRefresh },
+  { key: 'h', altKey: true, handler: () => jobsMapRef.value?.toggleViewMode() },
+  {
+    key: 'escape',
+    isEnabled: () => hasActiveFilters.value || !!searchQuery.value || mapFocus.value !== 'area',
+    handler: clearEverything
   }
+])
 
-  switch (event.key.toLowerCase()) {
-    case 'r':
-      if (event.altKey && !isLoading.value) {
-        handleRefresh()
-      }
-      break
-    case 'h':
-      if (event.altKey) {
-        jobsMapRef.value?.toggleViewMode()
-      }
-      break
-    case 'escape':
-      if (hasActiveFilters.value || searchQuery.value || mapFocus.value !== 'area') {
-        clearEverything()
-      }
-      break
-  }
-}
-
-// === Lifecycle ===
 onMounted(async () => {
   await refresh()
-
-  window.addEventListener('keydown', handleKeydown)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
 

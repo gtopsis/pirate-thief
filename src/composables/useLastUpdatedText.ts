@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { formatDistanceToNow } from 'date-fns'
-import { jobsSourceName } from '@/utils'
+import { jobsSourceName } from '@/config'
 
 const UPDATE_INTERVAL_MS = 60_000 // Update the "time ago" text every minute
 
@@ -10,8 +10,14 @@ const UPDATE_INTERVAL_MS = 60_000 // Update the "time ago" text every minute
  * Startup Pirate"), ticking on an interval so the text stays accurate over
  * time without requiring a new fetch. Call `markUpdatedNow()` whenever a
  * fetch completes successfully.
+ *
+ * The refresh interval is started/stopped via this component's own
+ * mount/unmount lifecycle by default. Pass `autoRefresh = false` to manage
+ * that yourself instead (via the returned `start()`/`stop()`) -- e.g. when
+ * calling this from somewhere without a component lifecycle to hook into,
+ * such as a plain unit test.
  */
-export const useLastUpdatedText = () => {
+export const useLastUpdatedText = (autoRefresh = true) => {
   const lastUpdatedDate = ref<Date | null>(null)
   const lastUpdatedText = ref('Jobs have not been fetched yet')
 
@@ -28,13 +34,19 @@ export const useLastUpdatedText = () => {
 
   let intervalId: number | undefined
 
-  onMounted(() => {
+  const start = (): void => {
     intervalId = window.setInterval(refreshText, UPDATE_INTERVAL_MS)
-  })
+  }
 
-  onUnmounted(() => {
+  const stop = (): void => {
     if (intervalId) clearInterval(intervalId)
-  })
+    intervalId = undefined
+  }
 
-  return { lastUpdatedText, markUpdatedNow }
+  if (autoRefresh) {
+    onMounted(start)
+    onUnmounted(stop)
+  }
+
+  return { lastUpdatedText, markUpdatedNow, start, stop }
 }

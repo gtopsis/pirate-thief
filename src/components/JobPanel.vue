@@ -5,8 +5,7 @@ import ActiveFiltersBar from '@/components/ActiveFiltersBar.vue'
 import FilterList from '@/components/FilterList.vue'
 import JobList from '@/components/JobList.vue'
 import JobListSkeleton from '@/components/JobListSkeleton.vue'
-import RemoteJobsNotice from '@/components/RemoteJobsNotice.vue'
-import UnmappedLocationsNotice from '@/components/UnmappedLocationsNotice.vue'
+import JobCountNotice from '@/components/JobCountNotice.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -23,32 +22,25 @@ const props = withDefaults(
     unmappableJobs: readonly Job[]
     remoteJobs: readonly Job[]
     /**
-     * The single "how many jobs am I looking at" label (see
-     * utils/text.ts's formatJobCountText) -- computed once by the parent
-     * (HomeView) from the same shown/total counts used everywhere else,
-     * so this panel and the mobile bottom sheet's persistent handle
-     * always agree, instead of each formatting their own similar-but-not
-     * -quite-identical text.
+     * The single "how many jobs am I looking at" label -- computed once
+     * by the parent (HomeView) so this panel and the mobile bottom
+     * sheet's persistent handle always agree.
      */
     jobCountText: string
     /**
      * Whether this panel instance should render `jobCountText` itself.
      * False when embedded in the mobile bottom sheet, whose own handle
-     * already shows this same label persistently (in every snap state,
-     * including collapsed) -- rendering it a second time here once the
-     * sheet reaches its "full" (non-compact) state would just repeat the
-     * exact same information right below it. True (default) for the
-     * desktop sidebar, which has no such persistent handle of its own.
+     * already shows this label persistently -- rendering it again here
+     * would just repeat the same info. True (default) for the desktop
+     * sidebar, which has no such persistent handle of its own.
      */
     showJobCountText?: boolean
     /**
-     * Hides secondary/administrative controls (the job-count text and the
-     * remote/unmapped notices), keeping only the sync-with-map toggle,
-     * search, filters, and the active-filters bar + the list itself.
-     * Used for the mobile bottom sheet's "half" (quick-glance) state,
-     * where those pieces would otherwise eat into the little space
-     * available for the list. Defaults to false so the desktop panel
-     * (which has no such space constraint) always shows everything.
+     * Hides secondary/administrative controls (job-count text, remote/
+     * unmapped notices), keeping only sync-with-map, search, filters, and
+     * the list. Used for the mobile bottom sheet's "half" (quick-glance)
+     * state, where those pieces would otherwise eat into the little space
+     * available for the list.
      */
     compact?: boolean
   }>(),
@@ -77,10 +69,9 @@ const onSyncToggleChange = (event: Event): void => {
 <template>
   <div class="flex flex-col h-full">
     <div class="shrink-0 flex flex-col gap-2 px-3 pt-3 pb-2 border-b border-(--color-divider)">
-      <!-- 1st: establishes the scope everything below operates within
-           (synced to the current map view, or every matching job
-           regardless of pan/zoom) -- shown even when compact, since it's
-           foundational rather than secondary. -->
+      <!-- Establishes the scope everything below operates within (synced
+           to the current map view, or every matching job regardless of
+           pan/zoom) -- shown even when compact, since it's foundational. -->
       <label
         v-if="props.isViewportFilterAvailable"
         class="flex items-center gap-2 text-xs text-(--color-text-2) select-none cursor-pointer"
@@ -94,7 +85,6 @@ const onSyncToggleChange = (event: Event): void => {
         Sync list with map view
       </label>
 
-      <!-- 2nd: search -->
       <label class="relative block">
         <span class="sr-only">Search jobs by title, company or location</span>
         <input
@@ -106,19 +96,16 @@ const onSyncToggleChange = (event: Event): void => {
         />
       </label>
 
-      <!-- 3rd: filters -->
       <FilterList
         :filters="props.filters"
         :job-counts="props.jobCounts"
         @filter:click="emit('filter:click', $event)"
       />
 
-      <!-- 4th: textual content derived from all of the above (sync/map
-           focus, search, filters) -- what's currently narrowing the view,
-           a way to undo any one of them (or all at once), and how many
-           jobs that leaves. Always visible (even compact): the single
-           canonical place to see this, so it can't disagree with the
-           actual search/filter/sync state shown above it. -->
+      <!-- What's currently narrowing the view, a way to undo any one of
+           them (or all at once), and how many jobs that leaves. Always
+           visible (even compact): the single canonical place to see
+           this. -->
       <ActiveFiltersBar
         :filters="props.filters"
         :search-query="props.searchQuery"
@@ -138,8 +125,17 @@ const onSyncToggleChange = (event: Event): void => {
       </p>
 
       <template v-if="!props.compact">
-        <RemoteJobsNotice :jobs="props.remoteJobs" />
-        <UnmappedLocationsNotice :jobs="props.unmappableJobs" />
+        <JobCountNotice
+          :jobs="props.remoteJobs"
+          :message="
+            (count, jobWord) =>
+              `${count} remote ${jobWord} shown as a nationwide overlay on the map`
+          "
+        />
+        <JobCountNotice
+          :jobs="props.unmappableJobs"
+          :message="(count, jobWord) => `${count} ${jobWord} couldn't be placed on the map`"
+        />
       </template>
     </div>
 

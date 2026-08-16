@@ -1,7 +1,7 @@
 import L from 'leaflet'
 import type { Job } from '@/types/types'
 import { getJobCoords, getJobId } from '@/utils/geo'
-import { isMobileViewport } from '@/utils/viewport'
+import { bindPopupUnlessMobile } from '@/utils/leafletPopup'
 
 export interface MarkerClusterLayerCallbacks {
   /** Builds the popup HTML shown when a marker (one or more jobs) is clicked. */
@@ -87,15 +87,7 @@ export const createMarkerClusterLayer = (callbacks: MarkerClusterLayerCallbacks)
 
       const marker = L.marker([lat, lng], { icon }) as JobCountMarker
       marker.jobCount = groupedJobs.length
-      // On mobile, tapping a marker already expands the bottom sheet to
-      // the same job(s) (see onMarkerClick below) in a much roomier,
-      // scrollable view -- binding a popup too would just duplicate that
-      // in a small overlay that can visually compete with the sheet.
-      // Desktop has no such sheet, so the popup stays the primary
-      // at-a-glance affordance there.
-      if (!isMobileViewport()) {
-        marker.bindPopup(callbacks.buildPopupContent(groupedJobs))
-      }
+      bindPopupUnlessMobile(marker, () => callbacks.buildPopupContent(groupedJobs))
       marker.on('click', () => callbacks.onMarkerClick(groupedJobs))
 
       for (const job of groupedJobs) {

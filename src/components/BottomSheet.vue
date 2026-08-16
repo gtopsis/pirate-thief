@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useVerticalDragGesture } from '@/composables/useVerticalDragGesture'
 
 const SNAP_POINTS = {
   collapsed: 0.12,
@@ -9,17 +10,11 @@ const SNAP_POINTS = {
 
 type SnapPoint = keyof typeof SNAP_POINTS
 
-// Below this amount of vertical pointer movement (in pixels), a gesture is
-// treated as a tap (handled by @click's toggleSnap) rather than a drag
-// (handled by onPointerUp's snap-to-nearest) -- see onPointerUp.
-const DRAG_THRESHOLD_PX = 10
-
 const props = defineProps<{
   /**
-   * The single "how many jobs am I looking at" label (see
-   * utils/text.ts's formatJobCountText), shown persistently on this
-   * handle regardless of snap state (collapsed/half/full) -- this is the
-   * mobile canonical place for that information, so the JobPanel content
+   * The single "how many jobs am I looking at" label, shown persistently
+   * on this handle regardless of snap state -- this is the mobile
+   * canonical place for that information, so the JobPanel content
    * rendered inside this sheet is told not to repeat it (see its
    * `showJobCountText` prop).
    */
@@ -33,19 +28,14 @@ const snap = ref<SnapPoint>('collapsed')
  * shrinking/growing as the mobile browser's address bar/toolbar
  * shows/hides -- unlike `window.innerHeight`, which stays pinned to the
  * largest possible viewport. Falls back to `window.innerHeight` where
- * unsupported. This must match what the sheet's height is styled with
- * (`dvh`, see the template) so a drag ratio computed here always maps to
- * a height that's actually reachable on screen.
+ * unsupported. Must match the sheet's `dvh`-styled height (see the
+ * template) so a drag ratio computed here always maps to a reachable
+ * height on screen.
  */
 const getViewportHeight = (): number =>
   typeof window !== 'undefined' ? (window.visualViewport?.height ?? window.innerHeight) : 800
 
 const viewportHeight = ref(getViewportHeight())
-const isDragging = ref(false)
-const hasDraggedPastThreshold = ref(false)
-const dragStartY = ref(0)
-const dragStartHeightRatio = ref(0)
-const currentHeightRatio = ref<number>(SNAP_POINTS.collapsed)
 
 const isExpanded = computed(() => snap.value !== 'collapsed')
 const isFull = computed(() => snap.value === 'full')
@@ -68,16 +58,6 @@ const updateViewportHeight = (): void => {
   viewportHeight.value = getViewportHeight()
 }
 
-const setSnap = (point: SnapPoint): void => {
-  snap.value = point
-  currentHeightRatio.value = SNAP_POINTS[point]
-}
-
-const toggleSnap = (): void => {
-  const nextIndex = (SNAP_CYCLE.indexOf(snap.value) + 1) % SNAP_CYCLE.length
-  setSnap(SNAP_CYCLE[nextIndex]!)
-}
-
 const nearestSnap = (ratio: number): SnapPoint => {
   let closest: SnapPoint = 'collapsed'
   let smallestDiff = Number.POSITIVE_INFINITY
@@ -92,49 +72,40 @@ const nearestSnap = (ratio: number): SnapPoint => {
   return closest
 }
 
-const onPointerDown = (event: PointerEvent): void => {
-  isDragging.value = true
-  hasDraggedPastThreshold.value = false
-  dragStartY.value = event.clientY
-  dragStartHeightRatio.value = currentHeightRatio.value
-  ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
+const {
+  isDragging,
+  ratio: currentHeightRatio,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp
+} = useVerticalDragGesture({
+  initialRatio: SNAP_POINTS.collapsed,
+  getViewportHeight: () => viewportHeight.value,
+  min: 0.06,
+  max: SNAP_POINTS.full,
+  // A plain tap (pointerdown+pointerup with no meaningful movement) is
+  // left entirely to @click's toggleSnap -- so tapping from 'full' always
+  // steps the sheet directly back down to 'collapsed' (see SNAP_CYCLE).
+  // Sub-threshold jitter (wasDrag: false) shouldn't leave the sheet at a
+  // slightly-off height either; snap back exactly to the current point
+  // and let @click decide whether to toggle it.
+  onRelease: (ratio, wasDrag) => {
+    if (wasDrag) {
+      setSnap(nearestSnap(ratio))
+    } else {
+      currentHeightRatio.value = SNAP_POINTS[snap.value]
+    }
+  }
+})
+
+const setSnap = (point: SnapPoint): void => {
+  snap.value = point
+  currentHeightRatio.value = SNAP_POINTS[point]
 }
 
-const onPointerMove = (event: PointerEvent): void => {
-  if (!isDragging.value) return
-
-  const deltaY = dragStartY.value - event.clientY
-  if (Math.abs(deltaY) > DRAG_THRESHOLD_PX) {
-    hasDraggedPastThreshold.value = true
-  }
-
-  const deltaRatio = deltaY / viewportHeight.value
-  const nextRatio = dragStartHeightRatio.value + deltaRatio
-  currentHeightRatio.value = Math.min(SNAP_POINTS.full, Math.max(0.06, nextRatio))
-}
-
-/**
- * A plain tap (pointerdown+pointerup with no meaningful movement) is left
- * entirely to @click's toggleSnap -- so tapping from 'full' always steps
- * the sheet directly back down to 'collapsed' (see SNAP_CYCLE). Without
- * this guard, even a stationary tap would re-run snap-to-nearest-of-the
- * -current-ratio here first, which is harmless on its own, but conflating
- * "was this a drag?" with "did the click handler already decide?" made
- * the two mechanisms harder to reason about together -- keeping them
- * mutually exclusive removes that ambiguity entirely.
- */
-const onPointerUp = (): void => {
-  if (!isDragging.value) return
-  isDragging.value = false
-
-  if (hasDraggedPastThreshold.value) {
-    setSnap(nearestSnap(currentHeightRatio.value))
-  } else {
-    // Sub-threshold jitter shouldn't leave the sheet at a slightly-off
-    // height; snap back exactly to the current point and let @click
-    // decide whether to toggle it.
-    currentHeightRatio.value = SNAP_POINTS[snap.value]
-  }
+const toggleSnap = (): void => {
+  const nextIndex = (SNAP_CYCLE.indexOf(snap.value) + 1) % SNAP_CYCLE.length
+  setSnap(SNAP_CYCLE[nextIndex]!)
 }
 
 onMounted(() => {

@@ -13,6 +13,7 @@ import { createRemoteJobsLayer } from '@/utils/remoteJobsLayer'
 import { createMarkerClusterLayer } from '@/utils/markerClusterLayer'
 import { createHeatmapLayer } from '@/utils/heatmapLayer'
 import { createDarkModeTileLayer } from '@/utils/darkModeTiles'
+import { useMarkerHighlight } from '@/composables/useMarkerHighlight'
 
 export interface MapView {
   lat: number
@@ -59,9 +60,8 @@ const registerMarker = (jobId: string, marker: L.Marker): void => {
 // Each factory below owns one Leaflet layer's lifecycle (creation,
 // updates, attach/detach) so this component only has to orchestrate
 // *when* each layer is shown/refreshed, not *how*. All three share
-// `markersByJobId` (reset once per job-list change in refreshJobLayers,
-// then repopulated via registerMarker) so flyToJob/highlight work
-// uniformly across city markers and the remote-jobs marker.
+// `markersByJobId` (reset once per job-list change in refreshJobLayers)
+// so flyToJob/highlight work uniformly across city and remote markers.
 const markerClusterLayer = createMarkerClusterLayer({
   buildPopupContent,
   onMarkerClick: (jobs) => emit('marker-click', jobs),
@@ -114,9 +114,9 @@ const initMap = (container: HTMLElement): void => {
 }
 
 /**
- * Show/hide the nationwide remote-jobs overlay (see remoteJobsLayer).
- * Hidden in heatmap view, where a translucent country-wide fill would
- * visually compete with the heatmap's own color scale.
+ * Hides the nationwide remote-jobs overlay in heatmap view, where a
+ * translucent country-wide fill would visually compete with the
+ * heatmap's own color scale.
  */
 const updateRemoteLayer = (): void => {
   if (!map) return
@@ -125,8 +125,7 @@ const updateRemoteLayer = (): void => {
 
 /**
  * Rebuilds the city-marker layer, the remote overlay, and (if active) the
- * heatmap from the current `props.jobs`/`props.remoteJobs`. Does not
- * re-fit the viewport -- see fitToInitialJobsOnce for that.
+ * heatmap. Does not re-fit the viewport -- see fitToInitialJobsOnce.
  */
 const refreshJobLayers = (): void => {
   // Reset once per cycle: both layer factories only ever *add* entries via
@@ -141,11 +140,9 @@ const refreshJobLayers = (): void => {
 }
 
 /**
- * Show either the clustered pin markers or a density heatmap.
- * Both layers are kept up to date; only one is attached to the map.
- * Heatmap rendering relies on 2D canvas support; if it's unavailable or
- * fails for any reason, we fall back to the marker view instead of
- * crashing the app.
+ * Shows either the clustered pin markers or a density heatmap. Heatmap
+ * rendering relies on 2D canvas support; if unavailable or it fails for
+ * any reason, falls back to the marker view instead of crashing the app.
  */
 const applyViewMode = (): void => {
   if (!map) return
@@ -177,16 +174,13 @@ const toggleViewMode = (): void => {
 let hasFitInitialBounds = false
 
 /**
- * Fits the viewport to the current jobs, but only ever once -- the first
- * time there's something to fit to (jobs typically arrive asynchronously
- * after mount, so this may run from the mount-time call below or from
- * the jobs-changed watcher, whichever sees non-empty jobs first). Never
- * again after that: `props.jobs` also changes whenever a tech-area
- * filter is toggled or a search query is typed, and re-fitting on every
- * one of those would reset/zoom out of the user's current pan/zoom
- * rather than just narrowing what's shown within it. A persisted initial
- * view (e.g. from a shared URL) is respected instead of ever
- * auto-fitting at all.
+ * Fits the viewport to the current jobs, but only ever once -- jobs
+ * typically arrive asynchronously after mount, so this may run from the
+ * mount-time call or the jobs-changed watcher, whichever sees non-empty
+ * jobs first. Never again after that: `props.jobs` also changes whenever
+ * a filter/search changes, and re-fitting on every one of those would
+ * reset the user's current pan/zoom. A persisted initial view (e.g. from
+ * a shared URL) skips auto-fitting entirely.
  */
 const fitToInitialJobsOnce = (): void => {
   if (!map || hasFitInitialBounds || props.initialView || props.jobs.length === 0) return
@@ -194,22 +188,12 @@ const fitToInitialJobsOnce = (): void => {
   hasFitInitialBounds = true
 }
 
-/**
- * Rebuilds every job-derived map layer, and fits the viewport if this is
- * the first time jobs are available (see fitToInitialJobsOnce). Runs
- * whenever the job list or remote-job list changes after the initial
- * mount.
- */
 const syncMapForJobsChange = (): void => {
   if (!map) return
   refreshJobLayers()
   fitToInitialJobsOnce()
 }
 
-/**
- * Pan/zoom to and open the popup for a specific job's marker.
- * Used when a job is selected from the list panel.
- */
 const flyToJob = (jobId: string): void => {
   const marker = markersByJobId.get(jobId)
   if (!map || !marker) return
@@ -220,21 +204,7 @@ const flyToJob = (jobId: string): void => {
 
 defineExpose({ flyToJob, toggleViewMode })
 
-let highlightedMarker: L.Marker | null = null
-
-const applyHighlight = (jobId: string | null | undefined): void => {
-  const previousElement = highlightedMarker?.getElement()
-  previousElement?.classList.remove('marker-highlighted')
-  highlightedMarker = null
-
-  if (!jobId) return
-
-  const marker = markersByJobId.get(jobId)
-  if (!marker) return
-
-  highlightedMarker = marker
-  marker.getElement()?.classList.add('marker-highlighted')
-}
+const { applyHighlight } = useMarkerHighlight(() => markersByJobId)
 
 onMounted(() => {
   if (!mapContainer.value) return
