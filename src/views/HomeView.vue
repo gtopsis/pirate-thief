@@ -210,7 +210,7 @@ onUnmounted(() => {
            one persistent column alongside the map (the app's only other
            top-level region on desktop -- see the main view below). -->
       <aside
-        class="hidden md:flex md:flex-col md:w-[420px] lg:w-[460px] shrink-0 border-r border-(--color-divider) bg-(--color-bg)"
+        class="hidden md:flex md:flex-col md:w-[420px] lg:w-[460px] md:h-full md:max-h-full md:min-h-0 shrink-0 border-r border-(--color-divider) bg-(--color-bg)"
       >
         <div class="shrink-0 flex flex-col gap-1 px-4 py-3 border-b border-(--color-divider)">
           <div class="flex items-center justify-between gap-2">
@@ -224,6 +224,7 @@ onUnmounted(() => {
 
         <JobPanel
           v-bind="jobPanelProps"
+          class="flex-1 min-h-0"
           @filter:click="toggleFilter"
           @clear-filters="clearEverything"
           @update:search-query="searchQuery = $event"
@@ -235,7 +236,7 @@ onUnmounted(() => {
       </aside>
 
       <!-- Main view: the map fills the remaining space on every device -->
-      <div class="flex-1 min-w-0 relative">
+      <div class="flex-1 min-w-0 h-full max-h-full relative">
         <JobsMap
           ref="jobsMapRef"
           :jobs="filteredJobList"

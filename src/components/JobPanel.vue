@@ -143,14 +143,18 @@ const onSyncToggleChange = (event: Event): void => {
       </template>
     </div>
 
-    <div class="flex-1 min-h-0 overflow-y-auto px-3 py-3">
+    <div class="flex-1 min-h-0 overflow-y-auto px-3 py-3 flex flex-col">
       <JobListSkeleton v-if="props.isLoading" />
 
       <p v-else-if="props.error" role="alert" class="text-center my-4">
         Fetching jobs failed. Please try again later.
       </p>
 
-      <div v-else-if="props.jobs.length === 0" role="status" class="text-center my-8">
+      <div
+        v-else-if="props.jobs.length === 0"
+        role="status"
+        class="flex-1 flex flex-col items-center justify-center text-center min-h-[12rem]"
+      >
         <p class="text-base text-(--color-text-2) mb-2">No jobs match</p>
         <p class="text-sm text-(--color-text-3) mb-4">
           Try a different search, tech area, or pan/zoom the map
