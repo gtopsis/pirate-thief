@@ -48,13 +48,13 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'filter:click', name: string): void
-  (e: 'clear-filters'): void
-  (e: 'update:search-query', value: string): void
-  (e: 'update:sync', synced: boolean): void
-  (e: 'clear-map-focus'): void
-  (e: 'job:select', jobId: string): void
-  (e: 'job:hover', jobId: string | null): void
+  'filter:click': [name: string]
+  'clear-filters': []
+  'update:search-query': [value: string]
+  'update:sync': [synced: boolean]
+  'clear-map-focus': []
+  'job:select': [jobId: string]
+  'job:hover': [jobId: string | null]
 }>()
 
 const onSearchInput = (event: Event): void => {

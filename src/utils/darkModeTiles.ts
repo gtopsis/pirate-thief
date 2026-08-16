@@ -37,7 +37,9 @@ export const createDarkModeTileLayer = () => {
   const attachTo = (map: L.Map): (() => void) => {
     apply(map, darkModeQuery?.matches ?? false)
 
-    const handleChange = (event: MediaQueryListEvent): void => apply(map, event.matches)
+    const handleChange = (event: MediaQueryListEvent): void => {
+      apply(map, event.matches)
+    }
     darkModeQuery?.addEventListener('change', handleChange)
 
     return () => darkModeQuery?.removeEventListener('change', handleChange)

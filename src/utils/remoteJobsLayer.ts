@@ -70,7 +70,9 @@ export const createRemoteJobsLayer = (callbacks: RemoteJobsLayerCallbacks) => {
 
     marker = L.marker(GREECE_CENTER, { icon, zIndexOffset: 1000 })
     bindPopupUnlessMobile(marker, () => callbacks.buildPopupContent([...remoteJobs]))
-    marker.on('click', () => callbacks.onMarkerClick([...remoteJobs]))
+    marker.on('click', () => {
+      callbacks.onMarkerClick([...remoteJobs])
+    })
     marker.addTo(map)
 
     for (const job of remoteJobs) {

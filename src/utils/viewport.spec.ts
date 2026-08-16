@@ -7,19 +7,13 @@ describe('isMobileViewport', () => {
   })
 
   it('returns true when the viewport matches the mobile media query', () => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia
-    )
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }) as unknown)
 
     expect(isMobileViewport()).toBe(true)
   })
 
   it('returns false when the viewport does not match the mobile media query', () => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
-    )
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }) as unknown)
 
     expect(isMobileViewport()).toBe(false)
   })

@@ -7,7 +7,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'click'): void
+  click: []
 }>()
 
 const buttonLabel = computed(() => (props.isLoading ? 'Loading jobs...' : 'Refresh jobs'))

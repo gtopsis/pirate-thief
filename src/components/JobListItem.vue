@@ -12,7 +12,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'select'): void
+  select: []
 }>()
 
 const isRemote = computed(() => isRemoteLocation(props.location))

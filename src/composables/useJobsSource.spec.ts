@@ -39,7 +39,12 @@ const withJobsSource = () => {
     }
   })
   const wrapper = mount(TestComponent)
-  return { result, unmount: () => wrapper.unmount() }
+  return {
+    result,
+    unmount: () => {
+      wrapper.unmount()
+    }
+  }
 }
 
 describe('useJobsSource', () => {

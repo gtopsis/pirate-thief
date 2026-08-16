@@ -10,8 +10,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'job:select', jobId: string): void
-  (e: 'job:hover', jobId: string | null): void
+  'job:select': [jobId: string]
+  'job:hover': [jobId: string | null]
 }>()
 
 // Resolves each job's id once per render instead of recomputing it inline

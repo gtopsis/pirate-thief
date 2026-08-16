@@ -40,6 +40,10 @@ export const useKeyboardShortcuts = (shortcuts: readonly KeyboardShortcut[]): vo
     }
   }
 
-  onMounted(() => window.addEventListener('keydown', handleKeydown))
-  onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
+  onMounted(() => {
+    window.addEventListener('keydown', handleKeydown)
+  })
+  onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeydown)
+  })
 }

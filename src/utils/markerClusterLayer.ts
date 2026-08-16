@@ -88,7 +88,9 @@ export const createMarkerClusterLayer = (callbacks: MarkerClusterLayerCallbacks)
       const marker = L.marker([lat, lng], { icon }) as JobCountMarker
       marker.jobCount = groupedJobs.length
       bindPopupUnlessMobile(marker, () => callbacks.buildPopupContent(groupedJobs))
-      marker.on('click', () => callbacks.onMarkerClick(groupedJobs))
+      marker.on('click', () => {
+        callbacks.onMarkerClick(groupedJobs)
+      })
 
       for (const job of groupedJobs) {
         callbacks.registerMarker(getJobId(job), marker)

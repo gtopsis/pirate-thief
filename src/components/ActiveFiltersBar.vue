@@ -10,8 +10,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'clear-map-focus'): void
-  (e: 'clear-all'): void
+  'clear-map-focus': []
+  'clear-all': []
 }>()
 
 // This bar exists only for state that has nowhere else to be seen: tech-

@@ -115,7 +115,9 @@ const handleMarkerClick = (jobs: Job[]): void => {
   activeJobId.value = jobId
   selectLocation(jobs)
   bottomSheetRef.value?.expand()
-  nextTick(() => scrollJobCardIntoView(jobId))
+  void nextTick(() => {
+    scrollJobCardIntoView(jobId)
+  })
 }
 
 const handleRefresh = (): Promise<void> => refresh()
@@ -128,7 +130,12 @@ const clearEverything = (): void => {
 }
 
 useKeyboardShortcuts([
-  { key: 'r', altKey: true, isEnabled: () => !isLoading.value, handler: handleRefresh },
+  {
+    key: 'r',
+    altKey: true,
+    isEnabled: () => !isLoading.value,
+    handler: () => void handleRefresh()
+  },
   { key: 'h', altKey: true, handler: () => jobsMapRef.value?.toggleViewMode() },
   {
     key: 'escape',

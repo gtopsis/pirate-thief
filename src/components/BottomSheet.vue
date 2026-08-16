@@ -119,8 +119,12 @@ onUnmounted(() => {
 })
 
 defineExpose({
-  expand: () => setSnap('half'),
-  collapse: () => setSnap('collapsed')
+  expand: () => {
+    setSnap('half')
+  },
+  collapse: () => {
+    setSnap('collapsed')
+  }
 })
 </script>
 

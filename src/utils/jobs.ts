@@ -18,7 +18,7 @@ export const searchJobs = (jobs: Job[], query: string): Job[] => {
   if (!normalized) return jobs
 
   return jobs.filter(({ company, title, location }) =>
-    [company, title, location].some((field) => field?.toLowerCase().includes(normalized))
+    [company, title, location].some((field) => field.toLowerCase().includes(normalized))
   )
 }
 

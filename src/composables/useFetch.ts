@@ -26,7 +26,7 @@ export const useFetch = <T = unknown>(url: string | Ref<string>) => {
         throw new Error(`Response status: ${response.status}`)
       }
 
-      const json = await response.json()
+      const json: unknown = await response.json()
       // Guard the success path too, not just the catch/finally below:
       // some environments resolve a fetch's promise successfully even
       // after its signal is aborted, rather than rejecting it -- without
@@ -34,7 +34,10 @@ export const useFetch = <T = unknown>(url: string | Ref<string>) => {
       // `data` after a newer request has already started (or finished).
       if (controller.signal.aborted) return
 
-      data.value = json
+      // `json` is only ever the value of an untyped `T = unknown` by
+      // default -- callers that request a concrete `T` are trusted to
+      // validate/narrow it themselves (see e.g. JobsSourceAdapter.toJobs).
+      data.value = json as T
     } catch (err) {
       // A request that was deliberately aborted (because a newer call
       // superseded it) isn't a real error -- that newer call already owns

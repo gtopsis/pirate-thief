@@ -29,9 +29,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'bounds-changed', bounds: MapBounds): void
-  (e: 'marker-click', jobs: Job[]): void
-  (e: 'view-changed', view: MapView): void
+  'bounds-changed': [bounds: MapBounds]
+  'marker-click': [jobs: Job[]]
+  'view-changed': [view: MapView]
 }>()
 
 let map: L.Map | null = null
@@ -64,7 +64,9 @@ const registerMarker = (jobId: string, marker: L.Marker): void => {
 // so flyToJob/highlight work uniformly across city and remote markers.
 const markerClusterLayer = createMarkerClusterLayer({
   buildPopupContent,
-  onMarkerClick: (jobs) => emit('marker-click', jobs),
+  onMarkerClick: (jobs) => {
+    emit('marker-click', jobs)
+  },
   registerMarker
 })
 
@@ -74,7 +76,9 @@ const darkModeTileLayer = createDarkModeTileLayer()
 
 const remoteJobsLayer = createRemoteJobsLayer({
   buildPopupContent,
-  onMarkerClick: (jobs) => emit('marker-click', jobs),
+  onMarkerClick: (jobs) => {
+    emit('marker-click', jobs)
+  },
   registerMarker
 })
 

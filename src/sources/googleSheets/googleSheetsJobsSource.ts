@@ -44,7 +44,7 @@ const toJobs = (raw: unknown): Job[] => {
   const jobs: Job[] = []
   for (let i = NUMBER_OF_HEADER_ROWS; i < raw.values.length; i++) {
     const row = raw.values[i]
-    if (row && row.length === NUMBER_OF_JOB_COLUMNS) {
+    if (row?.length === NUMBER_OF_JOB_COLUMNS) {
       jobs.push(rowToJob(row))
     }
   }

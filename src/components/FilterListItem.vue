@@ -6,7 +6,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'click'): void
+  click: []
 }>()
 </script>
 
